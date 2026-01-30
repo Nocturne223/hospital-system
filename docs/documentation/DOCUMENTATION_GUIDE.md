@@ -34,7 +34,7 @@ Project planning, design, and testing documentation.
 
 - **[Requirements Specification](REQUIREMENTS_SPECIFICATION.md)** - Complete requirements analysis
 - **[Design Documents](DESIGN_DOCUMENTS.md)** - System design and UML diagrams
-- **[Implementation Plan](../PROJECT_IMPLEMENTATION_PLAN.md)** - Detailed implementation roadmap
+- **[Implementation Plan](../implementation/PROJECT_IMPLEMENTATION_PLAN.md)** - Detailed implementation roadmap
 - **[Testing Documentation](TESTING_DOCUMENTATION.md)** - Test plans, cases, and results
 
 ---
@@ -58,7 +58,7 @@ Start here if you want to develop or maintain the system:
 Start here for project evaluation:
 1. [Requirements Specification](REQUIREMENTS_SPECIFICATION.md) - See what was required
 2. [Design Documents](DESIGN_DOCUMENTS.md) - Review system design
-3. [Implementation Plan](../PROJECT_IMPLEMENTATION_PLAN.md) - Understand implementation approach
+3. [Implementation Plan](../implementation/PROJECT_IMPLEMENTATION_PLAN.md) - Understand implementation approach
 4. [Testing Documentation](TESTING_DOCUMENTATION.md) - Review test coverage and results
 
 ---
@@ -113,16 +113,16 @@ All documentation follows these standards:
 ## Additional Resources
 
 ### Project Files
-- **[README.md](../README.md)** - Project overview and quick start
-- **[PROJECT_GUIDELINES.md](../PROJECT_GUIDELINES.md)** - Project requirements and rubrics
-- **[FEATURES_SUMMARY.md](../FEATURES_SUMMARY.md)** - Feature overview
-- **[IMPLEMENTATION_REVIEW.md](../IMPLEMENTATION_REVIEW.md)** - Implementation review
+- **[README.md](../../README.md)** - Project overview and quick start
+- **[PROJECT_GUIDELINES.md](PROJECT_GUIDELINES.md)** - Project requirements and rubrics
+- **[FEATURES_SUMMARY.md](FEATURES_SUMMARY.md)** - Feature overview
+- **[IMPLEMENTATION_REVIEW.md](../implementation/IMPLEMENTATION_REVIEW.md)** - Implementation review
 
 ### Technical Documentation
-- **[Database Decision](../docs/DATABASE_DECISION.md)** - Database selection rationale
-- **[Database Implementation](../docs/FEATURE8_IMPLEMENTATION.md)** - Database implementation details
-- **[Viewing Database](../docs/VIEWING_DATABASE.md)** - How to view database contents
-- **[XAMPP/Navicat Setup](../docs/XAMPP_NAVICAT_SETUP.md)** - Database tool setup
+- **[Database Decision](DATABASE_DECISION.md)** - Database selection rationale
+- **[Database Implementation](../implementation/FEATURE8_IMPLEMENTATION.md)** - Database implementation details
+- **[Viewing Database](VIEWING_DATABASE.md)** - How to view database contents
+- **[XAMPP/Navicat Setup](XAMPP_NAVICAT_SETUP.md)** - Database tool setup
 
 ### Feature Specifications
 All feature specifications are in the `features/` directory:

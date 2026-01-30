@@ -30,7 +30,7 @@ Should show: `[SUCCESS] MySQL connection test completed successfully!`
 
 **File**: `src/models/patient.py`
 
-Start with the Patient model. See `docs/NEXT_STEPS_ROADMAP.md` for example code.
+Start with the Patient model. See `docs/implementation/NEXT_STEPS_ROADMAP.md` for example code.
 
 ### Step 4: Create Your First Service (1-2 hours)
 
@@ -64,10 +64,10 @@ Create a test script to verify PatientService works.
 
 ## 📚 Resources
 
-- **Full Roadmap**: `docs/NEXT_STEPS_ROADMAP.md`
+- **Full Roadmap**: [NEXT_STEPS_ROADMAP.md](../implementation/NEXT_STEPS_ROADMAP.md)
 - **Feature Specs**: `features/` directory
-- **Architecture**: `docs/ARCHITECTURE.md`
-- **API Docs**: `docs/API_DOCUMENTATION.md`
+- **Architecture**: [ARCHITECTURE.md](ARCHITECTURE.md)
+- **API Docs**: [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
 
 ---
 

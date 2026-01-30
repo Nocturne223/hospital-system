@@ -462,9 +462,9 @@ As you write code:
 
 ### Documentation
 - Feature specs: `features/` directory
-- Architecture: `docs/ARCHITECTURE.md`
-- API docs: `docs/API_DOCUMENTATION.md`
-- Code standards: `docs/CODE_DOCUMENTATION.md`
+- Architecture: `docs/documentation/ARCHITECTURE.md`
+- API docs: `docs/documentation/API_DOCUMENTATION.md`
+- Code standards: `docs/documentation/CODE_DOCUMENTATION.md`
 
 ### Reference
 - MySQL syntax: Use `%s` for parameters

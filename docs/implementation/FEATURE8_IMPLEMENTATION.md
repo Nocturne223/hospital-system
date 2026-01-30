@@ -9,7 +9,7 @@
 ### 1. Database Selection
 - **Decision**: SQLite 3
 - **Rationale**: Zero configuration, built-in Python support, sufficient for project scope
-- **Location**: `docs/DATABASE_DECISION.md`
+- **Location**: `docs/documentation/DATABASE_DECISION.md`
 
 ### 2. Database Schema
 - **File**: `src/database/schema.sql`
@@ -76,7 +76,7 @@ Sys/
 ### 6. Additional Files
 - ✅ `.gitignore` - Properly configured to ignore database files
 - ✅ `requirements.txt` - Dependencies listed
-- ✅ `docs/DATABASE_DECISION.md` - Database selection rationale
+- ✅ `docs/documentation/DATABASE_DECISION.md` - Database selection rationale
 
 ## How to Use
 

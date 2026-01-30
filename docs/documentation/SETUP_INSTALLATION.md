@@ -342,7 +342,9 @@ Hospital-System/
 │   ├── ui/              # User interface
 │   └── utils/           # Utilities
 ├── tests/               # Test files
-├── docs/                # Documentation
+├── docs/
+│   ├── documentation/   # User & developer docs, guides, standards
+│   └── implementation/  # Implementation plans, summaries, roadmaps
 ├── data/                # Database files
 ├── requirements.txt     # Dependencies
 └── README.md           # Project readme

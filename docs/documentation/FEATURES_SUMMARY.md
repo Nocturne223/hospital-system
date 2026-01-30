@@ -192,7 +192,7 @@ All Features ────────────┼──> Reporting (7)
 
 1. **Review Documentation**:
    - Read `PROJECT_GUIDELINES.md` for requirements
-   - Read `PROJECT_IMPLEMENTATION_PLAN.md` for overall plan
+   - Read `docs/implementation/PROJECT_IMPLEMENTATION_PLAN.md` for overall plan
    - Review individual feature documents as needed
 
 2. **Set Up Environment**:

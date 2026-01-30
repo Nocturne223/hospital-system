@@ -59,7 +59,7 @@ For project planning and evaluation:
 3. **[TESTING_DOCUMENTATION.md](TESTING_DOCUMENTATION.md)**  
    Test plans, test cases, and test results.
 
-4. **[PROJECT_IMPLEMENTATION_PLAN.md](../PROJECT_IMPLEMENTATION_PLAN.md)**  
+4. **[PROJECT_IMPLEMENTATION_PLAN.md](../implementation/PROJECT_IMPLEMENTATION_PLAN.md)**  
    Implementation roadmap and phases.
 
 ---
@@ -71,7 +71,7 @@ Additional technical resources:
 1. **[DATABASE_DECISION.md](DATABASE_DECISION.md)**  
    Database selection rationale and specifications.
 
-2. **[FEATURE8_IMPLEMENTATION.md](FEATURE8_IMPLEMENTATION.md)**  
+2. **[FEATURE8_IMPLEMENTATION.md](../implementation/FEATURE8_IMPLEMENTATION.md)**  
    Database implementation details.
 
 3. **[VIEWING_DATABASE.md](VIEWING_DATABASE.md)**  
@@ -99,7 +99,7 @@ Additional technical resources:
 1. Review [REQUIREMENTS_SPECIFICATION.md](REQUIREMENTS_SPECIFICATION.md)
 2. Examine [DESIGN_DOCUMENTS.md](DESIGN_DOCUMENTS.md)
 3. Check [TESTING_DOCUMENTATION.md](TESTING_DOCUMENTATION.md)
-4. Review [PROJECT_IMPLEMENTATION_PLAN.md](../PROJECT_IMPLEMENTATION_PLAN.md)
+4. Review [PROJECT_IMPLEMENTATION_PLAN.md](../implementation/PROJECT_IMPLEMENTATION_PLAN.md)
 
 ---
 
