@@ -298,18 +298,32 @@ class SpecializationService:
             return {}
         
         # Get current queue size
-        queue_query = "SELECT COUNT(*) FROM queue_entries WHERE specialization_id = %s"
+        queue_query = "SELECT COUNT(*) as count FROM queue_entries WHERE specialization_id = %s"
         queue_result = self.db.execute_query(queue_query, (specialization_id,))
-        current_queue_size = queue_result[0][0] if queue_result else 0
+        if queue_result and len(queue_result) > 0:
+            # Result is a list of dict-like objects or tuples
+            if isinstance(queue_result[0], dict):
+                current_queue_size = queue_result[0].get('count', 0)
+            else:
+                # It's a tuple or row object
+                current_queue_size = queue_result[0][0] if len(queue_result[0]) > 0 else 0
+        else:
+            current_queue_size = 0
         
         # Calculate utilization
         utilization_percentage = (current_queue_size / specialization.max_capacity * 100) if specialization.max_capacity > 0 else 0
         is_full = current_queue_size >= specialization.max_capacity
         
         # Get assigned doctors count
-        doctor_query = "SELECT COUNT(*) FROM doctor_specializations WHERE specialization_id = %s"
+        doctor_query = "SELECT COUNT(*) as count FROM doctor_specializations WHERE specialization_id = %s"
         doctor_result = self.db.execute_query(doctor_query, (specialization_id,))
-        assigned_doctors_count = doctor_result[0][0] if doctor_result else 0
+        if doctor_result and len(doctor_result) > 0:
+            if isinstance(doctor_result[0], dict):
+                assigned_doctors_count = doctor_result[0].get('count', 0)
+            else:
+                assigned_doctors_count = doctor_result[0][0] if len(doctor_result[0]) > 0 else 0
+        else:
+            assigned_doctors_count = 0
         
         return {
             'specialization_id': specialization_id,
