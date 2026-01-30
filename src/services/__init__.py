@@ -7,5 +7,6 @@ from .specialization_service import SpecializationService
 from .queue_service import QueueService
 from .doctor_service import DoctorService
 from .appointment_service import AppointmentService
+from .report_service import ReportService
 
-__all__ = ['PatientService', 'SpecializationService', 'QueueService', 'DoctorService', 'AppointmentService']
+__all__ = ['PatientService', 'SpecializationService', 'QueueService', 'DoctorService', 'AppointmentService', 'ReportService']

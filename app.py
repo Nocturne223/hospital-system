@@ -6,7 +6,7 @@ Main entry point for the web-based GUI
 import streamlit as st
 import sys
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 # Add src to path
 project_root = os.path.dirname(os.path.abspath(__file__))
@@ -21,6 +21,7 @@ from services.specialization_service import SpecializationService
 from services.queue_service import QueueService
 from services.doctor_service import DoctorService
 from services.appointment_service import AppointmentService
+from services.report_service import ReportService
 from config import USE_MYSQL, MYSQL_CONFIG, SQLITE_CONFIG
 
 # Page configuration
@@ -44,6 +45,8 @@ if 'doctor_service' not in st.session_state:
     st.session_state.doctor_service = None
 if 'appointment_service' not in st.session_state:
     st.session_state.appointment_service = None
+if 'report_service' not in st.session_state:
+    st.session_state.report_service = None
 if 'db_error' not in st.session_state:
     st.session_state.db_error = None
 
@@ -70,6 +73,7 @@ def init_database():
             st.session_state.queue_service = QueueService(st.session_state.db_manager)
             st.session_state.doctor_service = DoctorService(st.session_state.db_manager)
             st.session_state.appointment_service = AppointmentService(st.session_state.db_manager)
+            st.session_state.report_service = ReportService(st.session_state.db_manager)
             st.session_state.db_error = None
             return True
         except Exception as e:
@@ -92,19 +96,82 @@ def main():
         """)
         st.stop()
     
-    # Sidebar navigation
-    st.sidebar.title("🏥 Hospital Management")
+    # Sidebar navigation with modern button design
+    st.sidebar.markdown("""
+    <div style='text-align: center; padding: 15px 0; border-bottom: 2px solid #e0e0e0; margin-bottom: 20px;'>
+        <h1 style='margin: 0; font-size: 26px; color: #1f77b4;'>🏥 Hospital Management</h1>
+        <p style='margin: 5px 0; color: #666; font-size: 13px;'>Management System</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Navigation menu items
+    nav_items = [
+        ("👥", "Patient Management"),
+        ("🏥", "Specialization Management"),
+        ("📋", "Queue Management"),
+        ("👨‍⚕️", "Doctor Management"),
+        ("📅", "Appointments"),
+        ("📊", "Reports & Analytics")
+    ]
+    
+    # Get current page from session state or default
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = "Patient Management"
+    
+    # Create navigation buttons
+    st.sidebar.markdown("### 🧭 Navigation")
+    st.sidebar.markdown("")
+    
+    # Check if any navigation button was clicked
+    page = st.session_state.current_page
+    
+    for icon, page_name in nav_items:
+        # Determine button style based on current page
+        button_type = "primary" if page_name == st.session_state.current_page else "secondary"
+        
+        if st.sidebar.button(
+            f"{icon} {page_name}",
+            use_container_width=True,
+            type=button_type,
+            key=f"nav_{page_name}"
+        ):
+            st.session_state.current_page = page_name
+            st.rerun()
+    
+    # Use the current page from session state
+    page = st.session_state.current_page
+    
     st.sidebar.markdown("---")
     
-    page = st.sidebar.radio(
-        "Navigation",
-        ["Patient Management", "Specialization Management", "Queue Management", 
-         "Doctor Management", "Appointments", "Reports & Analytics"],
-        index=0
-    )
+    # System status
+    st.sidebar.markdown("""
+    <div style='background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); 
+                padding: 12px; border-radius: 8px; margin: 15px 0; 
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+        <p style='margin: 0; text-align: center; font-size: 14px;'>
+            <strong style='color: #1b5e20;'>System Status</strong><br>
+            <span style='color: #2e7d32; font-weight: bold; font-size: 16px;'>✅ Connected</span>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    st.sidebar.markdown("---")
-    st.sidebar.info("**System Status:** ✅ Connected")
+    # Quick stats in sidebar
+    try:
+        report_service = st.session_state.report_service
+        dashboard_summary = report_service.get_dashboard_summary()
+        
+        st.sidebar.markdown("### 📈 Quick Stats")
+        
+        # Use columns for better layout
+        col1, col2 = st.sidebar.columns(2)
+        with col1:
+            st.metric("Patients", dashboard_summary['total_patients'], delta=None)
+            st.metric("Doctors", dashboard_summary['total_doctors'], delta=None)
+        with col2:
+            st.metric("Appointments", dashboard_summary['total_appointments'], delta=None)
+            st.metric("Queue", dashboard_summary['active_queue'], delta=None)
+    except:
+        pass
     
     # Main content area
     if page == "Patient Management":
@@ -118,7 +185,7 @@ def main():
     elif page == "Appointments":
         show_appointment_management()
     elif page == "Reports & Analytics":
-        show_placeholder("Reports & Analytics")
+        show_reports_analytics()
 
 
 def show_patient_management():
@@ -2886,6 +2953,498 @@ def show_cancel_appointment_dialog(appointment_service: AppointmentService):
             st.session_state.show_cancel_appointment = False
             st.session_state.cancel_appointment_id = None
             st.rerun()
+
+
+def show_reports_analytics():
+    """Reports & Analytics page"""
+    st.title("📊 Reports & Analytics")
+    st.markdown("---")
+    
+    report_service = st.session_state.report_service
+    
+    # Dashboard Summary
+    st.subheader("📈 Dashboard Summary")
+    dashboard_summary = report_service.get_dashboard_summary()
+    
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col1:
+        st.metric("Total Patients", dashboard_summary['total_patients'])
+    with col2:
+        st.metric("Total Doctors", dashboard_summary['total_doctors'])
+    with col3:
+        st.metric("Active Queue", dashboard_summary['active_queue'])
+    with col4:
+        st.metric("Total Appointments", dashboard_summary['total_appointments'])
+    with col5:
+        st.metric("Upcoming", dashboard_summary['upcoming_appointments'])
+    
+    st.markdown("---")
+    
+    # Report Type Selection
+    report_type = st.selectbox(
+        "📋 Select Report Type",
+        ["Patient Statistics", "Queue Analytics", "Appointment Reports", 
+         "Doctor Performance", "Specialization Utilization", "Custom Report"],
+        key="report_type"
+    )
+    
+    # Date Range Selection
+    col1, col2 = st.columns(2)
+    with col1:
+        start_date = st.date_input("📅 Start Date", value=date.today() - timedelta(days=30), key="report_start_date")
+    with col2:
+        end_date = st.date_input("📅 End Date", value=date.today(), key="report_end_date")
+    
+    date_range = (start_date, end_date)
+    
+    st.markdown("---")
+    
+    # Generate and display reports based on selection
+    if report_type == "Patient Statistics":
+        show_patient_reports(report_service, date_range)
+    elif report_type == "Queue Analytics":
+        show_queue_reports(report_service, date_range)
+    elif report_type == "Appointment Reports":
+        show_appointment_reports(report_service, date_range)
+    elif report_type == "Doctor Performance":
+        show_doctor_reports(report_service, date_range)
+    elif report_type == "Specialization Utilization":
+        show_specialization_reports(report_service)
+    elif report_type == "Custom Report":
+        show_custom_report(report_service, date_range)
+
+
+def show_patient_reports(report_service: ReportService, date_range: tuple):
+    """Display patient statistics reports"""
+    st.subheader("👥 Patient Statistics Report")
+    
+    stats = report_service.get_patient_statistics(date_range)
+    
+    # Key Metrics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Patients", stats['total'])
+    with col2:
+        st.metric("New Today", stats['new_today'])
+    with col3:
+        st.metric("New This Week", stats['new_this_week'])
+    with col4:
+        st.metric("New This Month", stats['new_this_month'])
+    
+    st.markdown("---")
+    
+    # Status Distribution Chart
+    st.subheader("📊 Status Distribution")
+    status_data = {
+        'Normal': stats['status_distribution'].get(0, 0),
+        'Urgent': stats['status_distribution'].get(1, 0),
+        'Super-Urgent': stats['status_distribution'].get(2, 0)
+    }
+    st.bar_chart(status_data)
+    
+    # Gender Distribution
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("👤 Gender Distribution")
+        st.bar_chart(stats['gender_distribution'])
+    
+    with col2:
+        st.subheader("🎂 Age Groups")
+        st.bar_chart(stats['age_groups'])
+
+
+def show_queue_reports(report_service: ReportService, date_range: tuple):
+    """Display queue analytics reports"""
+    st.subheader("📋 Queue Analytics Report")
+    
+    stats = report_service.get_queue_statistics(date_range=date_range)
+    
+    # Key Metrics
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Active Queue", stats['total_active'])
+    with col2:
+        st.metric("Average Wait Time", f"{stats['average_wait_time_minutes']:.1f} min")
+    with col3:
+        st.metric("Patients Served", stats['served_count'])
+    
+    st.markdown("---")
+    
+    # Priority Distribution
+    st.subheader("🚨 Priority Distribution")
+    priority_data = {
+        'Normal': stats['priority_distribution'].get(0, 0),
+        'Urgent': stats['priority_distribution'].get(1, 0),
+        'Super-Urgent': stats['priority_distribution'].get(2, 0)
+    }
+    st.bar_chart(priority_data)
+    
+    # Specialization Breakdown
+    if stats['specialization_breakdown']:
+        st.subheader("🏥 Queue by Specialization")
+        spec_service = st.session_state.specialization_service
+        spec_data = {}
+        for spec_id, count in stats['specialization_breakdown'].items():
+            spec = spec_service.get_specialization(spec_id)
+            if spec:
+                spec_data[spec.name] = count
+        if spec_data:
+            st.bar_chart(spec_data)
+
+
+def show_appointment_reports(report_service: ReportService, date_range: tuple):
+    """Display appointment reports"""
+    st.subheader("📅 Appointment Reports")
+    
+    stats = report_service.get_appointment_statistics(date_range)
+    
+    # Key Metrics
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col1:
+        st.metric("Total", stats['total'])
+    with col2:
+        st.metric("Scheduled", stats['status_distribution']['Scheduled'])
+    with col3:
+        st.metric("Completed", stats['status_distribution']['Completed'])
+    with col4:
+        st.metric("Cancelled", stats['status_distribution']['Cancelled'])
+    with col5:
+        st.metric("No-Show", stats['status_distribution']['No-Show'])
+    
+    st.markdown("---")
+    
+    # Rates
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Completion Rate", f"{stats['completion_rate']:.1f}%")
+    with col2:
+        st.metric("Cancellation Rate", f"{stats['cancellation_rate']:.1f}%")
+    with col3:
+        st.metric("No-Show Rate", f"{stats['no_show_rate']:.1f}%")
+    
+    st.markdown("---")
+    
+    # Status Distribution
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("📊 Status Distribution")
+        st.bar_chart(stats['status_distribution'])
+    
+    with col2:
+        st.subheader("📋 Type Distribution")
+        st.bar_chart(stats['type_distribution'])
+    
+    # Doctor Distribution
+    if stats['doctor_distribution']:
+        st.subheader("👨‍⚕️ Appointments by Doctor")
+        doctor_service = st.session_state.doctor_service
+        doctor_data = {}
+        for doctor_id, count in list(stats['doctor_distribution'].items())[:10]:  # Top 10
+            doctor = doctor_service.get_doctor(doctor_id)
+            if doctor:
+                doctor_data[doctor.display_name] = count
+        if doctor_data:
+            st.bar_chart(doctor_data)
+
+
+def show_doctor_reports(report_service: ReportService, date_range: tuple):
+    """Display doctor performance reports"""
+    st.subheader("👨‍⚕️ Doctor Performance Report")
+    
+    stats = report_service.get_doctor_statistics(date_range=date_range)
+    
+    st.metric("Total Doctors", stats['total_doctors'])
+    st.metric("Active Doctors", stats['active_doctors'])
+    
+    st.markdown("---")
+    
+    # Doctor Performance Table
+    if stats['doctors']:
+        import pandas as pd
+        
+        df_data = []
+        for doc_stat in stats['doctors']:
+            df_data.append({
+                'Doctor': doc_stat['doctor_name'],
+                'Total Appointments': doc_stat['total_appointments'],
+                'Completed': doc_stat['completed_appointments'],
+                'Cancelled': doc_stat['cancelled_appointments'],
+                'Specializations': doc_stat['specialization_count'],
+                'Status': doc_stat['status']
+            })
+        
+        df = pd.DataFrame(df_data)
+        df = df.sort_values('Total Appointments', ascending=False)
+        
+        st.subheader("📊 Doctor Performance Summary")
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        
+        # Top Doctors Chart
+        if len(df) > 0:
+            st.subheader("🏆 Top Doctors by Appointments")
+            top_doctors = df.head(10)
+            chart_data = top_doctors.set_index('Doctor')['Total Appointments']
+            st.bar_chart(chart_data)
+
+
+def show_specialization_reports(report_service: ReportService):
+    """Display specialization utilization reports"""
+    st.subheader("🏥 Specialization Utilization Report")
+    
+    stats = report_service.get_specialization_statistics()
+    
+    st.metric("Total Specializations", stats['total_specializations'])
+    st.metric("Active Specializations", stats['active_specializations'])
+    
+    st.markdown("---")
+    
+    # Specialization Utilization Table
+    if stats['specializations']:
+        import pandas as pd
+        
+        df_data = []
+        for spec_stat in stats['specializations']:
+            df_data.append({
+                'Specialization': spec_stat['specialization_name'],
+                'Current Queue': spec_stat['current_queue_size'],
+                'Max Capacity': spec_stat['max_capacity'],
+                'Utilization %': f"{spec_stat['utilization_percentage']:.1f}%",
+                'Total Appointments': spec_stat['total_appointments'],
+                'Assigned Doctors': spec_stat['assigned_doctors'],
+                'Status': 'Active' if spec_stat['is_active'] else 'Inactive'
+            })
+        
+        df = pd.DataFrame(df_data)
+        # Sort by utilization percentage (convert string to float for sorting)
+        df['Utilization_Num'] = df['Utilization %'].str.rstrip('%').astype('float')
+        df = df.sort_values('Utilization_Num', ascending=False)
+        df = df.drop('Utilization_Num', axis=1)
+        
+        st.subheader("📊 Specialization Utilization Summary")
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        
+        # Utilization Chart
+        if len(df) > 0:
+            st.subheader("📈 Utilization by Specialization")
+            chart_data = df.set_index('Specialization')['Current Queue']
+            st.bar_chart(chart_data)
+
+
+def show_custom_report(report_service: ReportService, date_range: tuple):
+    """Display custom report builder"""
+    st.subheader("🔧 Custom Report Builder")
+    
+    st.info("Select metrics and filters to generate a custom report with visualizations.")
+    
+    # Metric Selection
+    selected_metrics = st.multiselect(
+        "📊 Select Metrics",
+        ["Patient Statistics", "Queue Statistics", "Appointment Statistics", 
+         "Doctor Statistics", "Specialization Statistics"],
+        default=["Patient Statistics", "Appointment Statistics"]
+    )
+    
+    if st.button("🔍 Generate Custom Report", type="primary"):
+        st.markdown("---")
+        
+        if "Patient Statistics" in selected_metrics:
+            st.subheader("👥 Patient Statistics")
+            patient_stats = report_service.get_patient_statistics(date_range)
+            
+            # Key Metrics
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Total Patients", patient_stats['total'])
+            with col2:
+                st.metric("New Today", patient_stats['new_today'])
+            with col3:
+                st.metric("New This Week", patient_stats['new_this_week'])
+            with col4:
+                st.metric("New This Month", patient_stats['new_this_month'])
+            
+            # Charts
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**Status Distribution**")
+                status_data = {
+                    'Normal': patient_stats['status_distribution'].get(0, 0),
+                    'Urgent': patient_stats['status_distribution'].get(1, 0),
+                    'Super-Urgent': patient_stats['status_distribution'].get(2, 0)
+                }
+                st.bar_chart(status_data)
+            
+            with col2:
+                st.markdown("**Gender Distribution**")
+                st.bar_chart(patient_stats['gender_distribution'])
+            
+            st.markdown("**Age Groups**")
+            st.bar_chart(patient_stats['age_groups'])
+            
+            st.markdown("---")
+        
+        if "Queue Statistics" in selected_metrics:
+            st.subheader("📋 Queue Statistics")
+            queue_stats = report_service.get_queue_statistics(date_range=date_range)
+            
+            # Key Metrics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Active Queue", queue_stats['total_active'])
+            with col2:
+                st.metric("Average Wait Time", f"{queue_stats['average_wait_time_minutes']:.1f} min")
+            with col3:
+                st.metric("Patients Served", queue_stats['served_count'])
+            
+            # Priority Distribution
+            st.markdown("**Priority Distribution**")
+            priority_data = {
+                'Normal': queue_stats['priority_distribution'].get(0, 0),
+                'Urgent': queue_stats['priority_distribution'].get(1, 0),
+                'Super-Urgent': queue_stats['priority_distribution'].get(2, 0)
+            }
+            st.bar_chart(priority_data)
+            
+            # Specialization Breakdown
+            if queue_stats['specialization_breakdown']:
+                st.markdown("**Queue by Specialization**")
+                spec_service = st.session_state.specialization_service
+                spec_data = {}
+                for spec_id, count in queue_stats['specialization_breakdown'].items():
+                    spec = spec_service.get_specialization(spec_id)
+                    if spec:
+                        spec_data[spec.name] = count
+                if spec_data:
+                    st.bar_chart(spec_data)
+            
+            st.markdown("---")
+        
+        if "Appointment Statistics" in selected_metrics:
+            st.subheader("📅 Appointment Statistics")
+            appointment_stats = report_service.get_appointment_statistics(date_range)
+            
+            # Key Metrics
+            col1, col2, col3, col4, col5 = st.columns(5)
+            with col1:
+                st.metric("Total", appointment_stats['total'])
+            with col2:
+                st.metric("Scheduled", appointment_stats['status_distribution']['Scheduled'])
+            with col3:
+                st.metric("Completed", appointment_stats['status_distribution']['Completed'])
+            with col4:
+                st.metric("Cancelled", appointment_stats['status_distribution']['Cancelled'])
+            with col5:
+                st.metric("No-Show", appointment_stats['status_distribution']['No-Show'])
+            
+            # Rates
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Completion Rate", f"{appointment_stats['completion_rate']:.1f}%")
+            with col2:
+                st.metric("Cancellation Rate", f"{appointment_stats['cancellation_rate']:.1f}%")
+            with col3:
+                st.metric("No-Show Rate", f"{appointment_stats['no_show_rate']:.1f}%")
+            
+            # Charts
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**Status Distribution**")
+                st.bar_chart(appointment_stats['status_distribution'])
+            
+            with col2:
+                st.markdown("**Type Distribution**")
+                st.bar_chart(appointment_stats['type_distribution'])
+            
+            # Doctor Distribution
+            if appointment_stats['doctor_distribution']:
+                st.markdown("**Appointments by Doctor (Top 10)**")
+                doctor_service = st.session_state.doctor_service
+                doctor_data = {}
+                for doctor_id, count in list(appointment_stats['doctor_distribution'].items())[:10]:
+                    doctor = doctor_service.get_doctor(doctor_id)
+                    if doctor:
+                        doctor_data[doctor.display_name] = count
+                if doctor_data:
+                    st.bar_chart(doctor_data)
+            
+            st.markdown("---")
+        
+        if "Doctor Statistics" in selected_metrics:
+            st.subheader("👨‍⚕️ Doctor Statistics")
+            doctor_stats = report_service.get_doctor_statistics(date_range=date_range)
+            
+            st.metric("Total Doctors", doctor_stats['total_doctors'])
+            st.metric("Active Doctors", doctor_stats['active_doctors'])
+            
+            # Doctor Performance Table
+            if doctor_stats['doctors']:
+                import pandas as pd
+                
+                df_data = []
+                for doc_stat in doctor_stats['doctors']:
+                    df_data.append({
+                        'Doctor': doc_stat['doctor_name'],
+                        'Total Appointments': doc_stat['total_appointments'],
+                        'Completed': doc_stat['completed_appointments'],
+                        'Cancelled': doc_stat['cancelled_appointments'],
+                        'Specializations': doc_stat['specialization_count'],
+                        'Status': doc_stat['status']
+                    })
+                
+                df = pd.DataFrame(df_data)
+                df = df.sort_values('Total Appointments', ascending=False)
+                
+                st.markdown("**Doctor Performance Summary**")
+                st.dataframe(df, use_container_width=True, hide_index=True)
+                
+                # Top Doctors Chart
+                if len(df) > 0:
+                    st.markdown("**Top Doctors by Appointments**")
+                    top_doctors = df.head(10)
+                    chart_data = top_doctors.set_index('Doctor')['Total Appointments']
+                    st.bar_chart(chart_data)
+            
+            st.markdown("---")
+        
+        if "Specialization Statistics" in selected_metrics:
+            st.subheader("🏥 Specialization Statistics")
+            spec_stats = report_service.get_specialization_statistics()
+            
+            st.metric("Total Specializations", spec_stats['total_specializations'])
+            st.metric("Active Specializations", spec_stats['active_specializations'])
+            
+            # Specialization Utilization Table
+            if spec_stats['specializations']:
+                import pandas as pd
+                
+                df_data = []
+                for spec_stat in spec_stats['specializations']:
+                    df_data.append({
+                        'Specialization': spec_stat['specialization_name'],
+                        'Current Queue': spec_stat['current_queue_size'],
+                        'Max Capacity': spec_stat['max_capacity'],
+                        'Utilization %': f"{spec_stat['utilization_percentage']:.1f}%",
+                        'Total Appointments': spec_stat['total_appointments'],
+                        'Assigned Doctors': spec_stat['assigned_doctors'],
+                        'Status': 'Active' if spec_stat['is_active'] else 'Inactive'
+                    })
+                
+                df = pd.DataFrame(df_data)
+                df['Utilization_Num'] = df['Utilization %'].str.rstrip('%').astype('float')
+                df = df.sort_values('Utilization_Num', ascending=False)
+                df = df.drop('Utilization_Num', axis=1)
+                
+                st.markdown("**Specialization Utilization Summary**")
+                st.dataframe(df, use_container_width=True, hide_index=True)
+                
+                # Utilization Chart
+                if len(df) > 0:
+                    st.markdown("**Utilization by Specialization**")
+                    chart_data = df.set_index('Specialization')['Current Queue']
+                    st.bar_chart(chart_data)
+            
+            st.markdown("---")
+        
+        st.success("✅ Custom report generated successfully!")
 
 
 def show_placeholder(page_name: str):
