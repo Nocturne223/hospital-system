@@ -100,14 +100,14 @@ def add_sample_specializations():
     for spec_data in sample_specializations:
         try:
             specialization_id = service.create_specialization(spec_data)
-            print(f"  ✅ Added: {spec_data['name']} (ID: {specialization_id})")
+            print(f"  [OK] Added: {spec_data['name']} (ID: {specialization_id})")
             added_count += 1
         except ValueError as e:
             # Specialization already exists
-            print(f"  ⚠️  Skipped: {spec_data['name']} - {str(e)}")
+            print(f"  [SKIP] Skipped: {spec_data['name']} - {str(e)}")
             skipped_count += 1
         except Exception as e:
-            print(f"  ❌ Error adding {spec_data['name']}: {e}")
+            print(f"  [ERROR] Error adding {spec_data['name']}: {e}")
     
     print("\n" + "=" * 60)
     print(f"[SUMMARY]")
@@ -116,16 +116,16 @@ def add_sample_specializations():
     print("=" * 60)
     
     # Show all specializations
-    print("\n📋 Current Specializations in Database:")
+    print("\nCurrent Specializations in Database:")
     all_specs = service.get_all_specializations(active_only=False)
     for spec in all_specs:
         stats = service.get_specialization_statistics(spec.specialization_id)
-        status = "✅ Active" if spec.is_active else "❌ Inactive"
+        status = "[ACTIVE]" if spec.is_active else "[INACTIVE]"
         print(f"  [{spec.specialization_id}] {spec.name} - {status}")
         print(f"      Capacity: {stats.get('current_queue_size', 0)}/{spec.max_capacity}")
         print(f"      Utilization: {stats.get('utilization_percentage', 0):.1f}%")
     
-    print("\n✅ Sample specializations added successfully!")
+    print("\n[SUCCESS] Sample specializations added successfully!")
     print("\nYou can now:")
     print("  1. View in Streamlit: python -m streamlit run app.py")
     print("  2. View in database: python src/database/view_db.py --table specializations")
