@@ -19,6 +19,7 @@ from database import DatabaseManager
 from services.patient_service import PatientService
 from services.specialization_service import SpecializationService
 from services.queue_service import QueueService
+from services.doctor_service import DoctorService
 from config import USE_MYSQL, MYSQL_CONFIG, SQLITE_CONFIG
 
 # Page configuration
@@ -38,6 +39,8 @@ if 'specialization_service' not in st.session_state:
     st.session_state.specialization_service = None
 if 'queue_service' not in st.session_state:
     st.session_state.queue_service = None
+if 'doctor_service' not in st.session_state:
+    st.session_state.doctor_service = None
 if 'db_error' not in st.session_state:
     st.session_state.db_error = None
 
@@ -62,6 +65,7 @@ def init_database():
             st.session_state.patient_service = PatientService(st.session_state.db_manager)
             st.session_state.specialization_service = SpecializationService(st.session_state.db_manager)
             st.session_state.queue_service = QueueService(st.session_state.db_manager)
+            st.session_state.doctor_service = DoctorService(st.session_state.db_manager)
             st.session_state.db_error = None
             return True
         except Exception as e:
@@ -106,7 +110,7 @@ def main():
     elif page == "Queue Management":
         show_queue_management()
     elif page == "Doctor Management":
-        show_placeholder("Doctor Management")
+        show_doctor_management()
     elif page == "Appointments":
         show_placeholder("Appointments")
     elif page == "Reports & Analytics":
@@ -1661,6 +1665,594 @@ def show_queue_analytics(queue_service: QueueService, specialization_id: int):
     
     except Exception as e:
         st.error(f"❌ Error loading analytics: {e}")
+    
+    st.markdown("---")
+
+
+def show_doctor_management():
+    """Doctor Management page"""
+    st.title("👨‍⚕️ Doctor Management")
+    st.markdown("---")
+    
+    doctor_service = st.session_state.doctor_service
+    specialization_service = st.session_state.specialization_service
+    
+    # Display statistics at the top (always visible)
+    display_doctor_statistics(doctor_service)
+    
+    st.markdown("---")
+    
+    # Search and filter section
+    col1, col2, col3 = st.columns([2, 1, 1])
+    
+    with col1:
+        search_query = st.text_input(
+            "🔍 Search Doctors",
+            placeholder="Search by name, license, or email...",
+            key="doctor_search"
+        )
+    
+    with col2:
+        status_filter = st.selectbox(
+            "Filter by Status",
+            ["All", "Active", "Inactive", "On Leave"],
+            key="doctor_status_filter"
+        )
+    
+    with col3:
+        st.write("")  # Spacing
+        if st.button("🔄 Refresh", use_container_width=True):
+            st.rerun()
+    
+    # Action buttons
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("➕ Add New Doctor", use_container_width=True, type="primary"):
+            st.session_state.show_add_doctor = True
+            st.rerun()
+    
+    with col2:
+        if st.button("✏️ Edit Doctor", use_container_width=True):
+            # Check if doctor is selected
+            if 'selected_doctor_id' in st.session_state and st.session_state.selected_doctor_id:
+                st.session_state.edit_doctor_id = st.session_state.selected_doctor_id
+            st.session_state.show_edit_doctor = True
+            st.rerun()
+    
+    with col3:
+        if st.button("🗑️ Delete Doctor", use_container_width=True):
+            # Check if doctor is selected
+            if 'selected_doctor_id' in st.session_state and st.session_state.selected_doctor_id:
+                st.session_state.delete_doctor_id = st.session_state.selected_doctor_id
+            st.session_state.show_delete_doctor = True
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # Handle modals/dialogs
+    if st.session_state.get('show_add_doctor', False):
+        show_add_doctor_dialog(doctor_service, specialization_service)
+    
+    if st.session_state.get('show_edit_doctor', False):
+        show_edit_doctor_dialog(doctor_service, specialization_service)
+    
+    if st.session_state.get('show_delete_doctor', False):
+        show_delete_doctor_dialog(doctor_service)
+    
+    # Display doctors table
+    display_doctors_table(doctor_service, search_query, status_filter)
+
+
+def display_doctor_statistics(service: DoctorService):
+    """Display doctor statistics (always visible at top)"""
+    st.subheader("📊 Doctor Statistics")
+    
+    try:
+        all_doctors = service.get_all_doctors(active_only=False)
+        
+        if not all_doctors:
+            col1 = st.columns(1)[0]
+            with col1:
+                st.metric("Total Doctors", 0)
+            return
+        
+        total = len(all_doctors)
+        active = len([d for d in all_doctors if d.status == 'Active'])
+        inactive = len([d for d in all_doctors if d.status == 'Inactive'])
+        on_leave = len([d for d in all_doctors if d.status == 'On Leave'])
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Doctors", total)
+        
+        with col2:
+            st.metric("Active", active)
+        
+        with col3:
+            st.metric("Inactive", inactive)
+        
+        with col4:
+            st.metric("On Leave", on_leave)
+    
+    except Exception as e:
+        st.error(f"❌ Error loading statistics: {e}")
+
+
+def display_doctors_table(service: DoctorService, search_query: str = "", status_filter: str = "All"):
+    """Display doctors in a table with selection"""
+    try:
+        # Get doctors
+        if search_query:
+            doctors = service.search_doctors(search_query)
+        else:
+            doctors = service.get_all_doctors(active_only=False)
+        
+        # Filter by status
+        if status_filter != "All":
+            doctors = [d for d in doctors if d.status == status_filter]
+        
+        if not doctors:
+            st.info("No doctors found.")
+            return
+        
+        # Convert to display format
+        import pandas as pd
+        
+        data = []
+        for doctor in doctors:
+            data.append({
+                'ID': doctor.doctor_id,
+                'Name': doctor.display_name,
+                'License': doctor.license_number,
+                'Status': doctor.status,
+                'Phone': doctor.phone_number or 'N/A',
+                'Email': doctor.email or 'N/A',
+                'Experience': f"{doctor.years_of_experience} years" if doctor.years_of_experience else 'N/A'
+            })
+        
+        df = pd.DataFrame(data)
+        
+        # Add a selection checkbox column
+        if 'doctor_selection_state' not in st.session_state:
+            st.session_state.doctor_selection_state = {}
+        
+        # Add Select column with checkboxes (False by default)
+        df['Select'] = [st.session_state.doctor_selection_state.get(doctor.doctor_id, False) for doctor in doctors]
+        
+        # Reorder columns to show Select first
+        column_order = ['Select', 'ID', 'Name', 'License', 'Status', 'Phone', 'Email', 'Experience']
+        df = df[column_order]
+        
+        st.subheader("📋 Doctor List - Click the checkbox in a row to select it")
+        
+        # Display interactive table with selection column
+        edited_df = st.data_editor(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            height=400,
+            column_config={
+                "Select": st.column_config.CheckboxColumn("Select", width="small", help="Check to select this row"),
+                "ID": st.column_config.NumberColumn("ID", width="small", disabled=True),
+                "Name": st.column_config.TextColumn("Name", width="medium", disabled=True),
+                "License": st.column_config.TextColumn("License", width="medium", disabled=True),
+                "Status": st.column_config.TextColumn("Status", width="small", disabled=True),
+                "Phone": st.column_config.TextColumn("Phone", width="medium", disabled=True),
+                "Email": st.column_config.TextColumn("Email", width="large", disabled=True),
+                "Experience": st.column_config.TextColumn("Experience", width="small", disabled=True)
+            },
+            key="doctors_table_editor",
+            num_rows="fixed"
+        )
+        
+        # Find selected row(s) - only one should be selected
+        selected_rows = edited_df[edited_df['Select'] == True]
+        
+        if len(selected_rows) > 0:
+            # Get the first selected row (in case multiple are selected)
+            selected_row = selected_rows.iloc[0]
+            selected_id = int(selected_row['ID'])
+            st.session_state.selected_doctor_id = selected_id
+            
+            # Update selection state - uncheck all others
+            for idx, doctor in enumerate(doctors):
+                if doctor.doctor_id == selected_id:
+                    st.session_state.doctor_selection_state[doctor.doctor_id] = True
+                else:
+                    st.session_state.doctor_selection_state[doctor.doctor_id] = False
+            
+            st.success(f"✅ Selected: {selected_row['Name']} (ID: {selected_id}) - Click Edit/Delete button above to proceed")
+        else:
+            # No row selected - clear selection state
+            st.session_state.selected_doctor_id = None
+            for doctor in doctors:
+                st.session_state.doctor_selection_state[doctor.doctor_id] = False
+        
+        st.caption(f"Showing {len(doctors)} doctor(s) - Check a row's checkbox to select it, then click Edit/Delete button")
+    
+    except Exception as e:
+        st.error(f"❌ Error loading doctors: {e}")
+
+
+def show_add_doctor_dialog(doctor_service: DoctorService, specialization_service: SpecializationService):
+    """Show add doctor form"""
+    st.subheader("➕ Add New Doctor")
+    
+    with st.form("add_doctor_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            full_name = st.text_input("Full Name *", key="add_doctor_name")
+            title = st.text_input("Title (e.g., Dr., Prof.)", key="add_doctor_title", placeholder="Dr.")
+            license_number = st.text_input("License Number *", key="add_doctor_license")
+            phone_number = st.text_input("Phone Number", key="add_doctor_phone")
+            email = st.text_input("Email", key="add_doctor_email")
+            office_address = st.text_area("Office Address", key="add_doctor_address")
+        
+        with col2:
+            medical_degree = st.text_input("Medical Degree", key="add_doctor_degree")
+            years_of_experience = st.number_input("Years of Experience", min_value=0, max_value=100, value=0, key="add_doctor_experience")
+            certifications = st.text_area("Certifications", key="add_doctor_certifications")
+            status = st.selectbox("Status", ["Active", "Inactive", "On Leave"], index=0, key="add_doctor_status")
+            hire_date = st.date_input("Hire Date", key="add_doctor_hire_date")
+            bio = st.text_area("Bio/Description", key="add_doctor_bio")
+        
+        # Specialization selection
+        st.markdown("**Specializations**")
+        all_specializations = specialization_service.get_all_specializations(active_only=True)
+        specialization_options = {f"{s.name} (ID: {s.specialization_id})": s.specialization_id for s in all_specializations}
+        selected_specializations = st.multiselect(
+            "Select Specializations",
+            options=list(specialization_options.keys()),
+            key="add_doctor_specializations"
+        )
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            submit = st.form_submit_button("✅ Add Doctor", use_container_width=True, type="primary")
+        
+        with col2:
+            cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+        
+        if submit:
+            if not full_name or not license_number:
+                st.error("❌ Full name and license number are required!")
+            else:
+                try:
+                    doctor_data = {
+                        'full_name': full_name,
+                        'title': title if title else None,
+                        'license_number': license_number,
+                        'phone_number': phone_number if phone_number else None,
+                        'email': email if email else None,
+                        'office_address': office_address if office_address else None,
+                        'medical_degree': medical_degree if medical_degree else None,
+                        'years_of_experience': years_of_experience if years_of_experience > 0 else None,
+                        'certifications': certifications if certifications else None,
+                        'status': status,
+                        'bio': bio if bio else None,
+                        'hire_date': hire_date.isoformat() if hire_date else None,
+                        'specialization_ids': [specialization_options[s] for s in selected_specializations]
+                    }
+                    
+                    doctor_id = doctor_service.create_doctor(doctor_data)
+                    st.success(f"✅ Doctor added successfully! (ID: {doctor_id})")
+                    st.session_state.show_add_doctor = False
+                    st.rerun()
+                except ValueError as e:
+                    st.error(f"❌ {str(e)}")
+                except Exception as e:
+                    st.error(f"❌ Failed to add doctor: {e}")
+        
+        if cancel:
+            st.session_state.show_add_doctor = False
+            st.rerun()
+    
+    st.markdown("---")
+
+
+def show_edit_doctor_dialog(doctor_service: DoctorService, specialization_service: SpecializationService):
+    """Show edit doctor form"""
+    st.subheader("✏️ Edit Doctor")
+    
+    # Get doctor ID from selection (priority) or manual input
+    selected_id = st.session_state.get('selected_doctor_id')
+    
+    if selected_id:
+        # Auto-load selected doctor
+        doctor_id = selected_id
+        st.info(f"📝 Editing Doctor ID: {selected_id} (selected from table)")
+        try:
+            doctor = doctor_service.get_doctor(doctor_id)
+            if doctor:
+                st.session_state.edit_doctor_data = doctor.to_dict()
+                st.session_state.doctor_loaded = True
+            else:
+                st.error("❌ Doctor not found!")
+                st.session_state.doctor_loaded = False
+        except Exception as e:
+            st.error(f"❌ Error loading doctor: {e}")
+            st.session_state.doctor_loaded = False
+    else:
+        # Manual ID input
+        doctor_id = st.number_input(
+            "Enter Doctor ID to Edit (or select a row from the table above)",
+            min_value=1,
+            step=1,
+            value=st.session_state.get('edit_doctor_id', 1),
+            key="edit_doctor_id_input"
+        )
+        
+        if st.button("Load Doctor", use_container_width=True):
+            try:
+                doctor = doctor_service.get_doctor(doctor_id)
+                if not doctor:
+                    st.error("❌ Doctor not found!")
+                    st.session_state.doctor_loaded = False
+                else:
+                    st.session_state.edit_doctor_data = doctor.to_dict()
+                    st.session_state.doctor_loaded = True
+            except Exception as e:
+                st.error(f"❌ Error loading doctor: {e}")
+                st.session_state.doctor_loaded = False
+    
+    # Show edit form if doctor is loaded
+    if st.session_state.get('doctor_loaded', False) and st.session_state.get('edit_doctor_data'):
+        doctor_data = st.session_state.edit_doctor_data
+        
+        with st.form("edit_doctor_form"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                full_name = st.text_input(
+                    "Full Name *",
+                    value=doctor_data.get('full_name', ''),
+                    key="edit_doctor_name"
+                )
+                title = st.text_input(
+                    "Title",
+                    value=doctor_data.get('title', ''),
+                    key="edit_doctor_title"
+                )
+                license_number = st.text_input(
+                    "License Number *",
+                    value=doctor_data.get('license_number', ''),
+                    key="edit_doctor_license"
+                )
+                phone_number = st.text_input(
+                    "Phone Number",
+                    value=doctor_data.get('phone_number', ''),
+                    key="edit_doctor_phone"
+                )
+                email = st.text_input(
+                    "Email",
+                    value=doctor_data.get('email', ''),
+                    key="edit_doctor_email"
+                )
+                office_address = st.text_area(
+                    "Office Address",
+                    value=doctor_data.get('office_address', ''),
+                    key="edit_doctor_address"
+                )
+            
+            with col2:
+                medical_degree = st.text_input(
+                    "Medical Degree",
+                    value=doctor_data.get('medical_degree', ''),
+                    key="edit_doctor_degree"
+                )
+                years_of_experience = st.number_input(
+                    "Years of Experience",
+                    min_value=0,
+                    max_value=100,
+                    value=doctor_data.get('years_of_experience', 0),
+                    key="edit_doctor_experience"
+                )
+                certifications = st.text_area(
+                    "Certifications",
+                    value=doctor_data.get('certifications', ''),
+                    key="edit_doctor_certifications"
+                )
+                
+                # Status selectbox
+                status_options = ["Active", "Inactive", "On Leave"]
+                status_index = 0
+                if doctor_data.get('status'):
+                    try:
+                        status_index = status_options.index(doctor_data.get('status'))
+                    except:
+                        status_index = 0
+                
+                status = st.selectbox(
+                    "Status",
+                    status_options,
+                    index=status_index,
+                    key="edit_doctor_status"
+                )
+                
+                hire_date_str = doctor_data.get('hire_date')
+                hire_date = None
+                if hire_date_str:
+                    try:
+                        hire_date = date.fromisoformat(hire_date_str)
+                    except:
+                        pass
+                
+                hire_date = st.date_input(
+                    "Hire Date",
+                    value=hire_date,
+                    key="edit_doctor_hire_date"
+                )
+                
+                bio = st.text_area(
+                    "Bio/Description",
+                    value=doctor_data.get('bio', ''),
+                    key="edit_doctor_bio"
+                )
+            
+            # Specialization selection
+            st.markdown("**Specializations**")
+            all_specializations = specialization_service.get_all_specializations(active_only=True)
+            current_spec_ids = doctor_service.get_doctor_specializations(doctor_id)
+            specialization_options = {f"{s.name} (ID: {s.specialization_id})": s.specialization_id for s in all_specializations}
+            
+            # Pre-select current specializations
+            current_spec_names = [name for name, spec_id in specialization_options.items() if spec_id in current_spec_ids]
+            
+            selected_specializations = st.multiselect(
+                "Select Specializations",
+                options=list(specialization_options.keys()),
+                default=current_spec_names,
+                key="edit_doctor_specializations"
+            )
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                submit = st.form_submit_button("✅ Update Doctor", use_container_width=True, type="primary")
+            
+            with col2:
+                cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+            
+            if submit:
+                if not full_name or not license_number:
+                    st.error("❌ Full name and license number are required!")
+                else:
+                    try:
+                        update_data = {
+                            'full_name': full_name,
+                            'title': title if title else None,
+                            'license_number': license_number,
+                            'phone_number': phone_number if phone_number else None,
+                            'email': email if email else None,
+                            'office_address': office_address if office_address else None,
+                            'medical_degree': medical_degree if medical_degree else None,
+                            'years_of_experience': years_of_experience if years_of_experience > 0 else None,
+                            'certifications': certifications if certifications else None,
+                            'status': status,
+                            'bio': bio if bio else None,
+                            'hire_date': hire_date.isoformat() if hire_date else None
+                        }
+                        
+                        doctor_service.update_doctor(doctor_id, update_data)
+                        
+                        # Update specializations
+                        new_spec_ids = [specialization_options[s] for s in selected_specializations]
+                        current_spec_ids = doctor_service.get_doctor_specializations(doctor_id)
+                        
+                        # Remove unselected specializations
+                        for spec_id in current_spec_ids:
+                            if spec_id not in new_spec_ids:
+                                doctor_service.remove_specialization(doctor_id, spec_id)
+                        
+                        # Add new specializations
+                        for spec_id in new_spec_ids:
+                            if spec_id not in current_spec_ids:
+                                doctor_service.assign_specialization(doctor_id, spec_id)
+                        
+                        st.success("✅ Doctor updated successfully!")
+                        st.session_state.show_edit_doctor = False
+                        st.session_state.doctor_loaded = False
+                        st.rerun()
+                    except ValueError as e:
+                        st.error(f"❌ {str(e)}")
+                    except Exception as e:
+                        st.error(f"❌ Failed to update doctor: {e}")
+            
+            if cancel:
+                st.session_state.show_edit_doctor = False
+                st.session_state.doctor_loaded = False
+                st.rerun()
+    
+    st.markdown("---")
+
+
+def show_delete_doctor_dialog(doctor_service: DoctorService):
+    """Show delete doctor form"""
+    st.subheader("🗑️ Delete Doctor")
+    
+    # Get doctor ID from selection (priority) or manual input
+    selected_id = st.session_state.get('selected_doctor_id')
+    
+    if selected_id:
+        doctor_id = selected_id
+        st.info(f"📝 Deleting Doctor ID: {selected_id} (selected from table)")
+    else:
+        doctor_id = st.number_input(
+            "Enter Doctor ID to Delete (or select a row from the table above)",
+            min_value=1,
+            step=1,
+            value=st.session_state.get('delete_doctor_id', 1),
+            key="delete_doctor_id_input"
+        )
+        
+        if st.button("Load Doctor", use_container_width=True):
+            try:
+                doctor = doctor_service.get_doctor(doctor_id)
+                if not doctor:
+                    st.error("❌ Doctor not found!")
+                    st.session_state.delete_doctor_loaded = False
+                else:
+                    st.session_state.delete_doctor_data = doctor.to_dict()
+                    st.session_state.delete_doctor_loaded = True
+            except Exception as e:
+                st.error(f"❌ Error loading doctor: {e}")
+                st.session_state.delete_doctor_loaded = False
+    
+    # Show confirmation if doctor is loaded
+    if st.session_state.get('delete_doctor_loaded', False) and st.session_state.get('delete_doctor_data'):
+        doctor_data = st.session_state.delete_doctor_data
+        doctor = doctor_service.get_doctor(doctor_id)
+        
+        if doctor:
+            # Show confirmation
+            st.warning(f"⚠️ Are you sure you want to delete **{doctor.display_name}**?")
+            st.info("Note: This will set the doctor's status to 'Inactive' (soft delete).")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("✅ Yes, Delete", use_container_width=True, type="primary"):
+                    try:
+                        doctor_service.delete_doctor(doctor_id, force=False)
+                        st.success("✅ Doctor deleted successfully!")
+                        st.session_state.show_delete_doctor = False
+                        st.session_state.delete_doctor_loaded = False
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Failed to delete doctor: {e}")
+            
+            with col2:
+                if st.button("❌ Cancel", use_container_width=True):
+                    st.session_state.show_delete_doctor = False
+                    st.session_state.delete_doctor_loaded = False
+                    st.rerun()
+    else:
+        # Try to load doctor for confirmation
+        doctor = doctor_service.get_doctor(doctor_id)
+        if doctor:
+            st.warning(f"⚠️ Are you sure you want to delete **{doctor.display_name}**?")
+            st.info("Note: This will set the doctor's status to 'Inactive' (soft delete).")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("✅ Yes, Delete", use_container_width=True, type="primary"):
+                    try:
+                        doctor_service.delete_doctor(doctor_id, force=False)
+                        st.success("✅ Doctor deleted successfully!")
+                        st.session_state.show_delete_doctor = False
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Failed to delete doctor: {e}")
+            
+            with col2:
+                if st.button("❌ Cancel", use_container_width=True):
+                    st.session_state.show_delete_doctor = False
+                    st.rerun()
+        else:
+            st.error("❌ Doctor not found!")
     
     st.markdown("---")
 
