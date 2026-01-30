@@ -17,6 +17,7 @@ if src_dir not in sys.path:
 # Import backend components
 from database import DatabaseManager
 from services.patient_service import PatientService
+from services.specialization_service import SpecializationService
 from config import USE_MYSQL, MYSQL_CONFIG, SQLITE_CONFIG
 
 # Page configuration
@@ -32,6 +33,8 @@ if 'db_manager' not in st.session_state:
     st.session_state.db_manager = None
 if 'patient_service' not in st.session_state:
     st.session_state.patient_service = None
+if 'specialization_service' not in st.session_state:
+    st.session_state.specialization_service = None
 if 'db_error' not in st.session_state:
     st.session_state.db_error = None
 
@@ -54,6 +57,7 @@ def init_database():
                 )
             
             st.session_state.patient_service = PatientService(st.session_state.db_manager)
+            st.session_state.specialization_service = SpecializationService(st.session_state.db_manager)
             st.session_state.db_error = None
             return True
         except Exception as e:
@@ -82,8 +86,8 @@ def main():
     
     page = st.sidebar.radio(
         "Navigation",
-        ["Patient Management", "Queue Management", "Doctor Management", 
-         "Appointments", "Reports & Analytics"],
+        ["Patient Management", "Specialization Management", "Queue Management", 
+         "Doctor Management", "Appointments", "Reports & Analytics"],
         index=0
     )
     
@@ -93,6 +97,8 @@ def main():
     # Main content area
     if page == "Patient Management":
         show_patient_management()
+    elif page == "Specialization Management":
+        show_specialization_management()
     elif page == "Queue Management":
         show_placeholder("Queue Management")
     elif page == "Doctor Management":
@@ -508,6 +514,321 @@ def display_patients_table(service: PatientService, search_query: str = "", stat
     
     except Exception as e:
         st.error(f"❌ Error loading patients: {e}")
+
+
+def show_specialization_management():
+    """Specialization Management page"""
+    st.title("🏥 Specialization Management")
+    st.markdown("---")
+    
+    service = st.session_state.specialization_service
+    
+    # Search section
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        search_query = st.text_input(
+            "🔍 Search Specializations",
+            placeholder="Search by name or description...",
+            key="specialization_search"
+        )
+    
+    with col2:
+        st.write("")  # Spacing
+        if st.button("🔄 Refresh", use_container_width=True):
+            st.rerun()
+    
+    # Action buttons
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        if st.button("➕ Add New Specialization", use_container_width=True, type="primary"):
+            st.session_state.show_add_specialization = True
+            st.rerun()
+    
+    with col2:
+        if st.button("✏️ Edit Specialization", use_container_width=True):
+            st.session_state.show_edit_specialization = True
+            st.rerun()
+    
+    with col3:
+        if st.button("🗑️ Delete Specialization", use_container_width=True):
+            st.session_state.show_delete_specialization = True
+            st.rerun()
+    
+    with col4:
+        active_filter = st.selectbox(
+            "Filter",
+            ["All", "Active Only", "Inactive Only"],
+            key="specialization_filter"
+        )
+    
+    st.markdown("---")
+    
+    # Handle modals/dialogs
+    if st.session_state.get('show_add_specialization', False):
+        show_add_specialization_dialog(service)
+    
+    if st.session_state.get('show_edit_specialization', False):
+        show_edit_specialization_dialog(service)
+    
+    if st.session_state.get('show_delete_specialization', False):
+        show_delete_specialization_dialog(service)
+    
+    # Display specializations table
+    display_specializations_table(service, search_query, active_filter)
+
+
+def show_add_specialization_dialog(service: SpecializationService):
+    """Show add specialization form"""
+    st.subheader("➕ Add New Specialization")
+    
+    with st.form("add_specialization_form", clear_on_submit=True):
+        name = st.text_input("Specialization Name *", placeholder="e.g., Cardiology, Pediatrics")
+        description = st.text_area("Description", placeholder="Brief description of the specialization")
+        max_capacity = st.number_input(
+            "Maximum Queue Capacity *",
+            min_value=1,
+            max_value=1000,
+            value=10,
+            step=1
+        )
+        is_active = st.checkbox("Active", value=True)
+        
+        col1, col2, col3 = st.columns([1, 1, 2])
+        with col1:
+            submit = st.form_submit_button("💾 Save Specialization", use_container_width=True, type="primary")
+        with col2:
+            cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+        
+        if submit:
+            if not name or not name.strip():
+                st.error("Specialization name is required!")
+            else:
+                try:
+                    specialization_data = {
+                        'name': name.strip(),
+                        'description': description if description else None,
+                        'max_capacity': max_capacity,
+                        'is_active': is_active
+                    }
+                    
+                    specialization_id = service.create_specialization(specialization_data)
+                    st.success(f"✅ Specialization added successfully! (ID: {specialization_id})")
+                    st.session_state.show_add_specialization = False
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Failed to add specialization: {e}")
+        
+        if cancel:
+            st.session_state.show_add_specialization = False
+            st.rerun()
+    
+    st.markdown("---")
+
+
+def show_edit_specialization_dialog(service: SpecializationService):
+    """Show edit specialization form"""
+    st.subheader("✏️ Edit Specialization")
+    
+    # Get specialization ID
+    specialization_id = st.number_input(
+        "Enter Specialization ID to Edit",
+        min_value=1,
+        step=1,
+        key="edit_specialization_id"
+    )
+    
+    if st.button("Load Specialization", use_container_width=True):
+        try:
+            specialization = service.get_specialization(specialization_id)
+            if specialization:
+                st.session_state.edit_specialization_data = specialization.to_dict()
+                st.session_state.specialization_loaded = True
+                st.success("✅ Specialization loaded!")
+            else:
+                st.error("❌ Specialization not found!")
+        except Exception as e:
+            st.error(f"❌ Error loading specialization: {e}")
+    
+    if st.session_state.get('specialization_loaded', False) and st.session_state.get('edit_specialization_data'):
+        specialization_data = st.session_state.edit_specialization_data
+        
+        with st.form("edit_specialization_form"):
+            name = st.text_input(
+                "Specialization Name *",
+                value=specialization_data.get('name', ''),
+                key="edit_spec_name"
+            )
+            description = st.text_area(
+                "Description",
+                value=specialization_data.get('description', '') or '',
+                key="edit_spec_description"
+            )
+            max_capacity = st.number_input(
+                "Maximum Queue Capacity *",
+                min_value=1,
+                max_value=1000,
+                value=specialization_data.get('max_capacity', 10),
+                step=1,
+                key="edit_spec_capacity"
+            )
+            is_active = st.checkbox(
+                "Active",
+                value=specialization_data.get('is_active', True),
+                key="edit_spec_active"
+            )
+            
+            col1, col2, col3 = st.columns([1, 1, 2])
+            with col1:
+                submit = st.form_submit_button("💾 Update Specialization", use_container_width=True, type="primary")
+            with col2:
+                cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+            
+            if submit:
+                if not name or not name.strip():
+                    st.error("Specialization name is required!")
+                else:
+                    try:
+                        update_data = {
+                            'name': name.strip(),
+                            'description': description if description else None,
+                            'max_capacity': max_capacity,
+                            'is_active': is_active
+                        }
+                        
+                        service.update_specialization(specialization_id, update_data)
+                        st.success(f"✅ Specialization updated successfully!")
+                        st.session_state.show_edit_specialization = False
+                        st.session_state.specialization_loaded = False
+                        st.session_state.edit_specialization_data = None
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Failed to update specialization: {e}")
+            
+            if cancel:
+                st.session_state.show_edit_specialization = False
+                st.session_state.specialization_loaded = False
+                st.session_state.edit_specialization_data = None
+                st.rerun()
+    
+    st.markdown("---")
+
+
+def show_delete_specialization_dialog(service: SpecializationService):
+    """Show delete specialization dialog"""
+    st.subheader("🗑️ Delete Specialization")
+    
+    specialization_id = st.number_input(
+        "Enter Specialization ID to Delete",
+        min_value=1,
+        step=1,
+        key="delete_specialization_id"
+    )
+    
+    if st.button("🗑️ Delete Specialization", use_container_width=True, type="primary"):
+        try:
+            specialization = service.get_specialization(specialization_id)
+            if not specialization:
+                st.error("❌ Specialization not found!")
+            else:
+                # Show confirmation
+                st.warning(f"⚠️ Are you sure you want to delete **{specialization.name}**?")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("✅ Yes, Delete", use_container_width=True, type="primary"):
+                        try:
+                            service.delete_specialization(specialization_id, force=False)
+                            st.success(f"✅ Specialization '{specialization.name}' deactivated successfully!")
+                            st.session_state.show_delete_specialization = False
+                            st.rerun()
+                        except ValueError as e:
+                            st.error(f"❌ Cannot delete: {e}")
+                        except Exception as e:
+                            st.error(f"❌ Failed to delete: {e}")
+                
+                with col2:
+                    if st.button("❌ Cancel", use_container_width=True):
+                        st.session_state.show_delete_specialization = False
+                        st.rerun()
+        except Exception as e:
+            st.error(f"❌ Error: {e}")
+    
+    st.markdown("---")
+
+
+def display_specializations_table(service: SpecializationService, search_query: str, active_filter: str):
+    """Display specializations in a table"""
+    try:
+        # Get specializations
+        if search_query:
+            specializations = service.search_specializations(search_query)
+        else:
+            active_only = active_filter == "Active Only"
+            inactive_only = active_filter == "Inactive Only"
+            
+            if inactive_only:
+                all_specs = service.get_all_specializations(active_only=False)
+                specializations = [s for s in all_specs if not s.is_active]
+            else:
+                specializations = service.get_all_specializations(active_only=active_only)
+        
+        if specializations:
+            # Convert to list of dicts for DataFrame
+            import pandas as pd
+            specializations_data = []
+            for spec in specializations:
+                stats = service.get_specialization_statistics(spec.specialization_id)
+                spec_dict = spec.to_dict()
+                spec_dict['current_queue_size'] = stats.get('current_queue_size', 0)
+                spec_dict['utilization_percentage'] = stats.get('utilization_percentage', 0)
+                spec_dict['assigned_doctors_count'] = stats.get('assigned_doctors_count', 0)
+                specializations_data.append(spec_dict)
+            
+            df = pd.DataFrame(specializations_data)
+            
+            # Select columns to display
+            display_cols = [
+                'specialization_id', 'name', 'max_capacity', 'current_queue_size',
+                'utilization_percentage', 'assigned_doctors_count', 'is_active_text'
+            ]
+            
+            # Format the dataframe
+            if 'utilization_percentage' in df.columns:
+                df['utilization_percentage'] = df['utilization_percentage'].apply(lambda x: f"{x:.1f}%")
+            
+            st.dataframe(
+                df[display_cols],
+                use_container_width=True,
+                hide_index=True,
+                height=400
+            )
+            
+            st.caption(f"Showing {len(specializations)} specialization(s)")
+            
+            # Show statistics
+            st.subheader("📊 Statistics")
+            col1, col2, col3, col4 = st.columns(4)
+            
+            total = len(service.get_all_specializations(active_only=False))
+            active = len([s for s in specializations if s.is_active])
+            inactive = total - active
+            
+            with col1:
+                st.metric("Total Specializations", total)
+            with col2:
+                st.metric("Active", active)
+            with col3:
+                st.metric("Inactive", inactive)
+            with col4:
+                total_capacity = sum(s.max_capacity for s in specializations if s.is_active)
+                st.metric("Total Capacity", total_capacity)
+        else:
+            st.info("No specializations found matching your criteria.")
+    
+    except Exception as e:
+        st.error(f"❌ Error loading specializations: {e}")
 
 
 def show_placeholder(page_name: str):
