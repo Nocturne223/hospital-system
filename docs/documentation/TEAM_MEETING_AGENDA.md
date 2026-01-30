@@ -230,8 +230,8 @@
 **Available Resources**:
 
 1. **Existing Documentation**: All base documentation files
-2. **Team Member Guide**: `docs/TEAM_MEMBER_GUIDE.md`
-3. **Assignment Plan**: `docs/DOCUMENTATION_ASSIGNMENT.md`
+2. **Team Member Guide**: `docs/documentation/TEAM_MEMBER_GUIDE.md`
+3. **Assignment Plan**: `docs/documentation/DOCUMENTATION_ASSIGNMENT.md`
 4. **Developer Support**: Available for technical questions
 
 **How to Get Help**:
@@ -430,9 +430,9 @@ This meeting is successful if:
 ## Appendix: Quick Reference
 
 ### Documentation Files Location
-- All documentation: `docs/` directory
-- Assignment plan: `docs/DOCUMENTATION_ASSIGNMENT.md`
-- Team guide: `docs/TEAM_MEMBER_GUIDE.md`
+- All documentation: `docs/documentation/` and `docs/implementation/` directories
+- Assignment plan: `docs/documentation/DOCUMENTATION_ASSIGNMENT.md`
+- Team guide: `docs/documentation/TEAM_MEMBER_GUIDE.md`
 
 ### Key Dates
 - Project Deadline: [Date]

@@ -11,9 +11,9 @@ This guide will help you complete your assigned documentation tasks. Don't worry
 ### 👤 Member 1: User Documentation Lead
 
 **Your Files**:
-1. `docs/USER_MANUAL.md`
-2. `docs/FEATURE_WALKTHROUGH.md`
-3. `docs/FAQ.md`
+1. `docs/documentation/USER_MANUAL.md`
+2. `docs/documentation/FEATURE_WALKTHROUGH.md`
+3. `docs/documentation/FAQ.md`
 
 **What You Need to Do**:
 
@@ -72,9 +72,9 @@ This guide will help you complete your assigned documentation tasks. Don't worry
 ### 👤 Member 2: Project Documentation Lead
 
 **Your Files**:
-1. `docs/REQUIREMENTS_SPECIFICATION.md`
-2. `docs/DESIGN_DOCUMENTS.md`
-3. `PROJECT_IMPLEMENTATION_PLAN.md` (in root directory)
+1. `docs/documentation/REQUIREMENTS_SPECIFICATION.md`
+2. `docs/documentation/DESIGN_DOCUMENTS.md`
+3. `docs/implementation/PROJECT_IMPLEMENTATION_PLAN.md`
 
 **What You Need to Do**:
 
@@ -118,7 +118,7 @@ This guide will help you complete your assigned documentation tasks. Don't worry
   - What alternatives were considered?
   - Trade-offs
 
-#### Step 3: Update PROJECT_IMPLEMENTATION_PLAN.md
+#### Step 3: Update docs/implementation/PROJECT_IMPLEMENTATION_PLAN.md
 **Update Progress**:
 - Mark completed features with [x]
 - Update timeline with actual dates
@@ -135,9 +135,9 @@ This guide will help you complete your assigned documentation tasks. Don't worry
 ### 👤 Member 3: Testing & Quality Lead
 
 **Your Files**:
-1. `docs/TESTING_DOCUMENTATION.md`
-2. Create: `docs/CODE_QUALITY_REPORT.md` (new)
-3. Create: `docs/UAT_DOCUMENTATION.md` (new)
+1. `docs/documentation/TESTING_DOCUMENTATION.md`
+2. Create: `docs/documentation/CODE_QUALITY_REPORT.md` (new)
+3. Create: `docs/documentation/UAT_DOCUMENTATION.md` (new)
 
 **What You Need to Do**:
 
@@ -234,11 +234,11 @@ This guide will help you complete your assigned documentation tasks. Don't worry
 ### 👤 Member 4: Documentation Coordinator
 
 **Your Files**:
-1. `docs/DOCUMENTATION_GUIDE.md`
-2. `docs/INDEX.md`
-3. Create: `docs/PROJECT_SUMMARY.md` (new)
-4. Create: `docs/QUICK_REFERENCE.md` (new)
-5. `docs/VIEWING_DATABASE.md` & `docs/XAMPP_NAVICAT_SETUP.md`
+1. `docs/documentation/DOCUMENTATION_GUIDE.md`
+2. `docs/documentation/INDEX.md`
+3. Create: `docs/documentation/PROJECT_SUMMARY.md` (new)
+4. Create: `docs/documentation/QUICK_REFERENCE.md` (new)
+5. `docs/documentation/VIEWING_DATABASE.md` & `docs/documentation/XAMPP_NAVICAT_SETUP.md`
 
 **What You Need to Do**:
 

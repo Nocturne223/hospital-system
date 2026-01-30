@@ -109,7 +109,7 @@
   - Test automation
   - Bug tracking
 
-- [x] **[PROJECT_IMPLEMENTATION_PLAN.md](../PROJECT_IMPLEMENTATION_PLAN.md)** - Implementation plan
+- [x] **[PROJECT_IMPLEMENTATION_PLAN.md](../implementation/PROJECT_IMPLEMENTATION_PLAN.md)** - Implementation plan
   - POC analysis
   - Target architecture
   - Feature roadmap
@@ -220,7 +220,7 @@
 1. Requirements: [REQUIREMENTS_SPECIFICATION.md](REQUIREMENTS_SPECIFICATION.md)
 2. Design: [DESIGN_DOCUMENTS.md](DESIGN_DOCUMENTS.md)
 3. Testing: [TESTING_DOCUMENTATION.md](TESTING_DOCUMENTATION.md)
-4. Implementation: [PROJECT_IMPLEMENTATION_PLAN.md](../PROJECT_IMPLEMENTATION_PLAN.md)
+4. Implementation: [PROJECT_IMPLEMENTATION_PLAN.md](../implementation/PROJECT_IMPLEMENTATION_PLAN.md)
 
 ---
 
