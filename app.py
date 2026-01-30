@@ -20,6 +20,7 @@ from services.patient_service import PatientService
 from services.specialization_service import SpecializationService
 from services.queue_service import QueueService
 from services.doctor_service import DoctorService
+from services.appointment_service import AppointmentService
 from config import USE_MYSQL, MYSQL_CONFIG, SQLITE_CONFIG
 
 # Page configuration
@@ -41,6 +42,8 @@ if 'queue_service' not in st.session_state:
     st.session_state.queue_service = None
 if 'doctor_service' not in st.session_state:
     st.session_state.doctor_service = None
+if 'appointment_service' not in st.session_state:
+    st.session_state.appointment_service = None
 if 'db_error' not in st.session_state:
     st.session_state.db_error = None
 
@@ -66,6 +69,7 @@ def init_database():
             st.session_state.specialization_service = SpecializationService(st.session_state.db_manager)
             st.session_state.queue_service = QueueService(st.session_state.db_manager)
             st.session_state.doctor_service = DoctorService(st.session_state.db_manager)
+            st.session_state.appointment_service = AppointmentService(st.session_state.db_manager)
             st.session_state.db_error = None
             return True
         except Exception as e:
@@ -112,7 +116,7 @@ def main():
     elif page == "Doctor Management":
         show_doctor_management()
     elif page == "Appointments":
-        show_placeholder("Appointments")
+        show_appointment_management()
     elif page == "Reports & Analytics":
         show_placeholder("Reports & Analytics")
 
@@ -2255,6 +2259,633 @@ def show_delete_doctor_dialog(doctor_service: DoctorService):
             st.error("❌ Doctor not found!")
     
     st.markdown("---")
+
+
+def show_appointment_management():
+    """Appointment Management page"""
+    st.title("📅 Appointment Management")
+    st.markdown("---")
+    
+    appointment_service = st.session_state.appointment_service
+    patient_service = st.session_state.patient_service
+    doctor_service = st.session_state.doctor_service
+    specialization_service = st.session_state.specialization_service
+    
+    # Display statistics at the top (always visible)
+    display_appointment_statistics(appointment_service)
+    
+    st.markdown("---")
+    
+    # Search and filter section
+    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+    
+    with col1:
+        search_query = st.text_input(
+            "🔍 Search Appointments",
+            placeholder="Search by patient name, doctor name, or reason...",
+            key="appointment_search"
+        )
+    
+    with col2:
+        status_filter = st.selectbox(
+            "Filter by Status",
+            ["All", "Scheduled", "Confirmed", "Cancelled", "Completed", "No-Show"],
+            key="appointment_status_filter"
+        )
+    
+    with col3:
+        date_filter = st.selectbox(
+            "Filter by Date",
+            ["All", "Today", "Upcoming", "Past"],
+            key="appointment_date_filter"
+        )
+    
+    with col4:
+        st.write("")  # Spacing
+        if st.button("🔄 Refresh", use_container_width=True):
+            st.rerun()
+    
+    # Action buttons
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        if st.button("➕ Schedule New Appointment", use_container_width=True, type="primary"):
+            st.session_state.show_add_appointment = True
+            st.rerun()
+    
+    with col2:
+        if st.button("✏️ Edit Appointment", use_container_width=True):
+            # Check if appointment is selected
+            if 'selected_appointment_id' in st.session_state and st.session_state.selected_appointment_id:
+                st.session_state.edit_appointment_id = st.session_state.selected_appointment_id
+            st.session_state.show_edit_appointment = True
+            st.rerun()
+    
+    with col3:
+        if st.button("✅ Mark Complete", use_container_width=True):
+            # Check if appointment is selected
+            if 'selected_appointment_id' in st.session_state and st.session_state.selected_appointment_id:
+                st.session_state.complete_appointment_id = st.session_state.selected_appointment_id
+            st.session_state.show_complete_appointment = True
+            st.rerun()
+    
+    with col4:
+        if st.button("❌ Cancel Appointment", use_container_width=True):
+            # Check if appointment is selected
+            if 'selected_appointment_id' in st.session_state and st.session_state.selected_appointment_id:
+                st.session_state.cancel_appointment_id = st.session_state.selected_appointment_id
+            st.session_state.show_cancel_appointment = True
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # Handle modals/dialogs
+    if st.session_state.get('show_add_appointment', False):
+        show_add_appointment_dialog(appointment_service, patient_service, doctor_service, specialization_service)
+    
+    if st.session_state.get('show_edit_appointment', False):
+        show_edit_appointment_dialog(appointment_service, patient_service, doctor_service, specialization_service)
+    
+    if st.session_state.get('show_complete_appointment', False):
+        show_complete_appointment_dialog(appointment_service)
+    
+    if st.session_state.get('show_cancel_appointment', False):
+        show_cancel_appointment_dialog(appointment_service)
+    
+    # Display appointments table
+    display_appointments_table(appointment_service, patient_service, doctor_service, specialization_service, search_query, status_filter, date_filter)
+
+
+def display_appointment_statistics(service: AppointmentService):
+    """Display appointment statistics (always visible at top)"""
+    st.subheader("📊 Appointment Statistics")
+    
+    try:
+        stats = service.get_appointment_statistics()
+        
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
+        
+        with col1:
+            st.metric("Total", stats['total'])
+        
+        with col2:
+            st.metric("Scheduled", stats['scheduled'])
+        
+        with col3:
+            st.metric("Confirmed", stats['confirmed'])
+        
+        with col4:
+            st.metric("Upcoming", stats['upcoming'])
+        
+        with col5:
+            st.metric("Today", stats['today'])
+        
+        with col6:
+            st.metric("Completed", stats['completed'])
+        
+        # Additional row for cancelled and no-show
+        col7, col8 = st.columns(2)
+        with col7:
+            st.metric("Cancelled", stats['cancelled'])
+        with col8:
+            st.metric("No-Show", stats['no_show'])
+    
+    except Exception as e:
+        st.error(f"❌ Error loading statistics: {e}")
+
+
+def display_appointments_table(service: AppointmentService, patient_service: PatientService, 
+                               doctor_service: DoctorService, specialization_service: SpecializationService,
+                               search_query: str = "", status_filter: str = "All", date_filter: str = "All"):
+    """Display appointments in a table with selection"""
+    try:
+        import pandas as pd
+        
+        # Build filters
+        filters = {}
+        if status_filter != "All":
+            filters['status'] = status_filter
+        
+        if date_filter == "Today":
+            filters['start_date'] = date.today()
+            filters['end_date'] = date.today()
+        elif date_filter == "Upcoming":
+            filters['upcoming_only'] = True
+        elif date_filter == "Past":
+            # We'll filter in Python after fetching
+            pass
+        
+        # Get appointments
+        appointments = service.get_all_appointments(filters if filters else None)
+        
+        # Filter for past if needed
+        if date_filter == "Past":
+            appointments = [a for a in appointments if a.is_past]
+        
+        # Apply search filter
+        if search_query:
+            filtered_appointments = []
+            search_lower = search_query.lower()
+            for apt in appointments:
+                # Get patient and doctor names
+                patient = patient_service.get_patient(apt.patient_id)
+                doctor = doctor_service.get_doctor(apt.doctor_id)
+                
+                patient_name = patient.full_name.lower() if patient else ""
+                doctor_name = doctor.full_name.lower() if doctor else ""
+                reason = (apt.reason or "").lower()
+                
+                if (search_lower in patient_name or 
+                    search_lower in doctor_name or 
+                    search_lower in reason):
+                    filtered_appointments.append(apt)
+            appointments = filtered_appointments
+        
+        if not appointments:
+            st.info("📭 No appointments found.")
+            return
+        
+        # Prepare data for table
+        data = []
+        for apt in appointments:
+            patient = patient_service.get_patient(apt.patient_id)
+            doctor = doctor_service.get_doctor(apt.doctor_id)
+            specialization = specialization_service.get_specialization(apt.specialization_id)
+            
+            data.append({
+                'ID': apt.appointment_id,
+                'Date': apt.appointment_date.strftime('%Y-%m-%d') if apt.appointment_date else 'N/A',
+                'Time': apt.appointment_time.strftime('%H:%M') if apt.appointment_time else 'N/A',
+                'Patient': patient.full_name if patient else f"ID: {apt.patient_id}",
+                'Doctor': doctor.display_name if doctor else f"ID: {apt.doctor_id}",
+                'Specialization': specialization.name if specialization else 'N/A',
+                'Type': apt.appointment_type,
+                'Status': apt.status,
+                'Duration': f"{apt.duration} min"
+            })
+        
+        df = pd.DataFrame(data)
+        
+        # Add a selection checkbox column
+        if 'appointment_selection_state' not in st.session_state:
+            st.session_state.appointment_selection_state = {}
+        
+        df['Select'] = [st.session_state.appointment_selection_state.get(apt.appointment_id, False) for apt in appointments]
+        
+        # Reorder columns to show Select first
+        column_order = ['Select', 'ID', 'Date', 'Time', 'Patient', 'Doctor', 'Specialization', 'Type', 'Status', 'Duration']
+        df = df[column_order]
+        
+        st.subheader("📋 Appointment List - Click the checkbox in a row to select it")
+        
+        # Display interactive table with selection column
+        edited_df = st.data_editor(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            height=400,
+            column_config={
+                "Select": st.column_config.CheckboxColumn("Select", width="small", help="Check to select this row"),
+                "ID": st.column_config.NumberColumn("ID", width="small", disabled=True),
+                "Date": st.column_config.TextColumn("Date", width="small", disabled=True),
+                "Time": st.column_config.TextColumn("Time", width="small", disabled=True),
+                "Patient": st.column_config.TextColumn("Patient", width="medium", disabled=True),
+                "Doctor": st.column_config.TextColumn("Doctor", width="medium", disabled=True),
+                "Specialization": st.column_config.TextColumn("Specialization", width="medium", disabled=True),
+                "Type": st.column_config.TextColumn("Type", width="small", disabled=True),
+                "Status": st.column_config.TextColumn("Status", width="small", disabled=True),
+                "Duration": st.column_config.TextColumn("Duration", width="small", disabled=True)
+            },
+            key="appointments_table_editor",
+            num_rows="fixed"
+        )
+        
+        # Find selected row(s) - only one should be selected
+        selected_rows = edited_df[edited_df['Select'] == True]
+        
+        if len(selected_rows) > 0:
+            selected_row = selected_rows.iloc[0]
+            selected_id = int(selected_row['ID'])
+            st.session_state.selected_appointment_id = selected_id
+            
+            # Update selection state - uncheck all others
+            for idx, apt in enumerate(appointments):
+                if apt.appointment_id == selected_id:
+                    st.session_state.appointment_selection_state[apt.appointment_id] = True
+                else:
+                    st.session_state.appointment_selection_state[apt.appointment_id] = False
+            
+            st.success(f"✅ Selected: Appointment ID {selected_id} - Click Edit/Cancel button above to proceed")
+        else:
+            # No row selected - clear selection state
+            st.session_state.selected_appointment_id = None
+            for apt in appointments:
+                st.session_state.appointment_selection_state[apt.appointment_id] = False
+        
+        st.caption(f"Showing {len(appointments)} appointment(s) - Check a row's checkbox to select it, then click Edit/Cancel button")
+    
+    except Exception as e:
+        st.error(f"❌ Error loading appointments: {e}")
+
+
+def show_add_appointment_dialog(appointment_service: AppointmentService, patient_service: PatientService,
+                                doctor_service: DoctorService, specialization_service: SpecializationService):
+    """Show add appointment dialog"""
+    st.subheader("➕ Schedule New Appointment")
+    st.markdown("---")
+    
+    with st.form("add_appointment_form", clear_on_submit=True):
+        # Get all patients, doctors, and specializations
+        all_patients = patient_service.get_all_patients()
+        patients = [p for p in all_patients if p.status == 1]  # Filter active patients (status 1 = Active)
+        doctors = doctor_service.get_all_doctors(active_only=True)
+        specializations = specialization_service.get_all_specializations(active_only=True)
+        
+        if not patients:
+            st.error("❌ No active patients found. Please add patients first.")
+            if st.form_submit_button("❌ Cancel"):
+                st.session_state.show_add_appointment = False
+                st.rerun()
+            return
+        
+        if not doctors:
+            st.error("❌ No active doctors found. Please add doctors first.")
+            if st.form_submit_button("❌ Cancel"):
+                st.session_state.show_add_appointment = False
+                st.rerun()
+            return
+        
+        if not specializations:
+            st.error("❌ No active specializations found. Please add specializations first.")
+            if st.form_submit_button("❌ Cancel"):
+                st.session_state.show_add_appointment = False
+                st.rerun()
+            return
+        
+        # Patient selection
+        patient_options = {f"{p.full_name} (ID: {p.patient_id})": p.patient_id for p in patients}
+        selected_patient = st.selectbox("👤 Patient *", list(patient_options.keys()))
+        patient_id = patient_options[selected_patient]
+        
+        # Doctor selection
+        doctor_options = {f"{d.display_name} (ID: {d.doctor_id})": d.doctor_id for d in doctors}
+        selected_doctor = st.selectbox("👨‍⚕️ Doctor *", list(doctor_options.keys()))
+        doctor_id = doctor_options[selected_doctor]
+        
+        # Specialization selection
+        spec_options = {f"{s.name}": s.specialization_id for s in specializations}
+        selected_spec = st.selectbox("🏥 Specialization *", list(spec_options.keys()))
+        specialization_id = spec_options[selected_spec]
+        
+        # Date and time
+        col1, col2 = st.columns(2)
+        with col1:
+            appointment_date = st.date_input("📅 Appointment Date *", min_value=date.today())
+        with col2:
+            appointment_time = st.time_input("🕐 Appointment Time *", value=time(9, 0))
+        
+        # Duration and type
+        col1, col2 = st.columns(2)
+        with col1:
+            duration = st.number_input("⏱️ Duration (minutes) *", min_value=15, max_value=240, value=30, step=15)
+        with col2:
+            appointment_type = st.selectbox("📋 Appointment Type *", ["Regular", "Follow-up", "Emergency"])
+        
+        # Reason and notes
+        reason = st.text_area("📝 Reason for Visit", placeholder="Enter the reason for this appointment...")
+        notes = st.text_area("📄 Additional Notes", placeholder="Any additional notes or information...")
+        
+        # Status
+        status = st.selectbox("📊 Status", ["Scheduled", "Confirmed"], index=0)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            submit = st.form_submit_button("✅ Schedule Appointment", use_container_width=True, type="primary")
+        with col2:
+            cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+        
+        if submit:
+            try:
+                # Check for conflicts
+                conflicts = appointment_service.check_conflicts(doctor_id, appointment_date, appointment_time, duration)
+                if conflicts:
+                    st.error(f"❌ Time slot conflicts with existing appointment(s). Please choose a different time.")
+                else:
+                    appointment_data = {
+                        'patient_id': patient_id,
+                        'doctor_id': doctor_id,
+                        'specialization_id': specialization_id,
+                        'appointment_date': appointment_date.isoformat(),
+                        'appointment_time': appointment_time.strftime('%H:%M:%S'),
+                        'duration': duration,
+                        'appointment_type': appointment_type,
+                        'reason': reason if reason else None,
+                        'notes': notes if notes else None,
+                        'status': status
+                    }
+                    
+                    appointment_id = appointment_service.create_appointment(appointment_data)
+                    st.success(f"✅ Appointment scheduled successfully! (ID: {appointment_id})")
+                    st.session_state.show_add_appointment = False
+                    st.rerun()
+            except Exception as e:
+                st.error(f"❌ Failed to schedule appointment: {e}")
+        
+        if cancel:
+            st.session_state.show_add_appointment = False
+            st.rerun()
+
+
+def show_edit_appointment_dialog(appointment_service: AppointmentService, patient_service: PatientService,
+                                 doctor_service: DoctorService, specialization_service: SpecializationService):
+    """Show edit appointment dialog"""
+    st.subheader("✏️ Edit Appointment")
+    st.markdown("---")
+    
+    appointment_id = st.session_state.get('edit_appointment_id')
+    
+    if not appointment_id:
+        st.error("❌ No appointment selected. Please select an appointment from the table.")
+        if st.button("❌ Close"):
+            st.session_state.show_edit_appointment = False
+            st.rerun()
+        return
+    
+    appointment = appointment_service.get_appointment(appointment_id)
+    
+    if not appointment:
+        st.error("❌ Appointment not found!")
+        if st.button("❌ Close"):
+            st.session_state.show_edit_appointment = False
+            st.rerun()
+        return
+    
+    with st.form("edit_appointment_form"):
+        # Get all patients, doctors, and specializations
+        all_patients = patient_service.get_all_patients()
+        patients = [p for p in all_patients if p.status == 1]  # Filter active patients (status 1 = Active)
+        doctors = doctor_service.get_all_doctors(active_only=True)
+        specializations = specialization_service.get_all_specializations(active_only=True)
+        
+        # Patient selection
+        patient_options = {f"{p.full_name} (ID: {p.patient_id})": p.patient_id for p in patients}
+        current_patient = next((p for p in patients if p.patient_id == appointment.patient_id), None)
+        current_patient_key = f"{current_patient.full_name} (ID: {current_patient.patient_id})" if current_patient else list(patient_options.keys())[0]
+        selected_patient = st.selectbox("👤 Patient *", list(patient_options.keys()), index=list(patient_options.keys()).index(current_patient_key) if current_patient_key in patient_options else 0)
+        patient_id = patient_options[selected_patient]
+        
+        # Doctor selection
+        doctor_options = {f"{d.display_name} (ID: {d.doctor_id})": d.doctor_id for d in doctors}
+        current_doctor = next((d for d in doctors if d.doctor_id == appointment.doctor_id), None)
+        current_doctor_key = f"{current_doctor.display_name} (ID: {current_doctor.doctor_id})" if current_doctor else list(doctor_options.keys())[0]
+        selected_doctor = st.selectbox("👨‍⚕️ Doctor *", list(doctor_options.keys()), index=list(doctor_options.keys()).index(current_doctor_key) if current_doctor_key in doctor_options else 0)
+        doctor_id = doctor_options[selected_doctor]
+        
+        # Specialization selection
+        spec_options = {f"{s.name}": s.specialization_id for s in specializations}
+        current_spec = next((s for s in specializations if s.specialization_id == appointment.specialization_id), None)
+        current_spec_key = current_spec.name if current_spec else list(spec_options.keys())[0]
+        selected_spec = st.selectbox("🏥 Specialization *", list(spec_options.keys()), index=list(spec_options.keys()).index(current_spec_key) if current_spec_key in spec_options else 0)
+        specialization_id = spec_options[selected_spec]
+        
+        # Date and time
+        col1, col2 = st.columns(2)
+        with col1:
+            appointment_date = st.date_input("📅 Appointment Date *", value=appointment.appointment_date if appointment.appointment_date else date.today(), min_value=date.today())
+        with col2:
+            appointment_time = st.time_input("🕐 Appointment Time *", value=appointment.appointment_time if appointment.appointment_time else time(9, 0))
+        
+        # Duration and type
+        col1, col2 = st.columns(2)
+        with col1:
+            duration = st.number_input("⏱️ Duration (minutes) *", min_value=15, max_value=240, value=appointment.duration, step=15)
+        with col2:
+            appointment_type = st.selectbox("📋 Appointment Type *", ["Regular", "Follow-up", "Emergency"], index=["Regular", "Follow-up", "Emergency"].index(appointment.appointment_type) if appointment.appointment_type in ["Regular", "Follow-up", "Emergency"] else 0)
+        
+        # Reason and notes
+        reason = st.text_area("📝 Reason for Visit", value=appointment.reason or "", placeholder="Enter the reason for this appointment...")
+        notes = st.text_area("📄 Additional Notes", value=appointment.notes or "", placeholder="Any additional notes or information...")
+        
+        # Status
+        status_options = ["Scheduled", "Confirmed", "Cancelled", "Completed", "No-Show"]
+        status = st.selectbox("📊 Status", status_options, index=status_options.index(appointment.status) if appointment.status in status_options else 0)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            submit = st.form_submit_button("✅ Update Appointment", use_container_width=True, type="primary")
+        with col2:
+            cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+        
+        if submit:
+            try:
+                appointment_data = {
+                    'patient_id': patient_id,
+                    'doctor_id': doctor_id,
+                    'specialization_id': specialization_id,
+                    'appointment_date': appointment_date.isoformat(),
+                    'appointment_time': appointment_time.strftime('%H:%M:%S'),
+                    'duration': duration,
+                    'appointment_type': appointment_type,
+                    'reason': reason if reason else None,
+                    'notes': notes if notes else None,
+                    'status': status
+                }
+                
+                success = appointment_service.update_appointment(appointment_id, appointment_data)
+                if success:
+                    st.success(f"✅ Appointment updated successfully!")
+                    st.session_state.show_edit_appointment = False
+                    st.session_state.edit_appointment_id = None
+                    st.rerun()
+                else:
+                    st.error("❌ Failed to update appointment.")
+            except Exception as e:
+                st.error(f"❌ Failed to update appointment: {e}")
+        
+        if cancel:
+            st.session_state.show_edit_appointment = False
+            st.session_state.edit_appointment_id = None
+            st.rerun()
+
+
+def show_complete_appointment_dialog(appointment_service: AppointmentService):
+    """Show mark appointment as complete dialog"""
+    st.subheader("✅ Mark Appointment as Complete")
+    st.markdown("---")
+    
+    appointment_id = st.session_state.get('complete_appointment_id')
+    
+    if not appointment_id:
+        st.error("❌ No appointment selected. Please select an appointment from the table.")
+        if st.button("❌ Close"):
+            st.session_state.show_complete_appointment = False
+            st.rerun()
+        return
+    
+    appointment = appointment_service.get_appointment(appointment_id)
+    
+    if not appointment:
+        st.error("❌ Appointment not found!")
+        if st.button("❌ Close"):
+            st.session_state.show_complete_appointment = False
+            st.rerun()
+        return
+    
+    # Check if appointment is already completed
+    if appointment.status == 'Completed':
+        st.warning("⚠️ This appointment is already marked as completed.")
+        if st.button("❌ Close"):
+            st.session_state.show_complete_appointment = False
+            st.rerun()
+        return
+    
+    # Show appointment details
+    st.info(f"""
+    **Appointment Details:**
+    - **ID:** {appointment.appointment_id}
+    - **Date:** {appointment.appointment_date.strftime('%Y-%m-%d') if appointment.appointment_date else 'N/A'}
+    - **Time:** {appointment.appointment_time.strftime('%H:%M') if appointment.appointment_time else 'N/A'}
+    - **Current Status:** {appointment.status}
+    """)
+    
+    with st.form("complete_appointment_form"):
+        notes = st.text_area("📝 Completion Notes (Optional)", placeholder="Add any notes about the appointment completion...")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            submit = st.form_submit_button("✅ Mark as Complete", use_container_width=True, type="primary")
+        with col2:
+            cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+        
+        if submit:
+            try:
+                # Update appointment status to Completed
+                appointment_data = {
+                    'status': 'Completed'
+                }
+                # Add notes if provided
+                if notes:
+                    current_notes = appointment.notes or ""
+                    if current_notes:
+                        appointment_data['notes'] = f"{current_notes}\n[Completed] {notes}"
+                    else:
+                        appointment_data['notes'] = f"[Completed] {notes}"
+                
+                success = appointment_service.update_appointment(appointment_id, appointment_data)
+                if success:
+                    st.success("✅ Appointment marked as completed successfully!")
+                    st.session_state.show_complete_appointment = False
+                    st.session_state.complete_appointment_id = None
+                    st.rerun()
+                else:
+                    st.error("❌ Failed to mark appointment as complete.")
+            except Exception as e:
+                st.error(f"❌ Failed to mark appointment as complete: {e}")
+        
+        if cancel:
+            st.session_state.show_complete_appointment = False
+            st.session_state.complete_appointment_id = None
+            st.rerun()
+
+
+def show_cancel_appointment_dialog(appointment_service: AppointmentService):
+    """Show cancel appointment dialog"""
+    st.subheader("❌ Cancel Appointment")
+    st.markdown("---")
+    
+    appointment_id = st.session_state.get('cancel_appointment_id')
+    
+    if not appointment_id:
+        st.error("❌ No appointment selected. Please select an appointment from the table.")
+        if st.button("❌ Close"):
+            st.session_state.show_cancel_appointment = False
+            st.rerun()
+        return
+    
+    appointment = appointment_service.get_appointment(appointment_id)
+    
+    if not appointment:
+        st.error("❌ Appointment not found!")
+        if st.button("❌ Close"):
+            st.session_state.show_cancel_appointment = False
+            st.rerun()
+        return
+    
+    # Show appointment details
+    st.info(f"""
+    **Appointment Details:**
+    - **ID:** {appointment.appointment_id}
+    - **Date:** {appointment.appointment_date.strftime('%Y-%m-%d') if appointment.appointment_date else 'N/A'}
+    - **Time:** {appointment.appointment_time.strftime('%H:%M') if appointment.appointment_time else 'N/A'}
+    - **Status:** {appointment.status}
+    """)
+    
+    with st.form("cancel_appointment_form"):
+        cancellation_reason = st.text_area("📝 Cancellation Reason", placeholder="Enter the reason for cancellation...")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            submit = st.form_submit_button("✅ Confirm Cancellation", use_container_width=True, type="primary")
+        with col2:
+            cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+        
+        if submit:
+            try:
+                success = appointment_service.cancel_appointment(appointment_id, cancellation_reason if cancellation_reason else None)
+                if success:
+                    st.success("✅ Appointment cancelled successfully!")
+                    st.session_state.show_cancel_appointment = False
+                    st.session_state.cancel_appointment_id = None
+                    st.rerun()
+                else:
+                    st.error("❌ Failed to cancel appointment.")
+            except Exception as e:
+                st.error(f"❌ Failed to cancel appointment: {e}")
+        
+        if cancel:
+            st.session_state.show_cancel_appointment = False
+            st.session_state.cancel_appointment_id = None
+            st.rerun()
 
 
 def show_placeholder(page_name: str):
