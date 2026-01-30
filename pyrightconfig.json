@@ -1,0 +1,22 @@
+{
+  "include": [
+    "src",
+    "tests",
+    "*.py"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/node_modules",
+    ".venv",
+    "venv"
+  ],
+  "extraPaths": [
+    "src"
+  ],
+  "pythonVersion": "3.8",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "warning",
+  "reportMissingTypeStubs": false,
+  "reportCallIssue": "none",
+  "reportArgumentType": "none"
+}

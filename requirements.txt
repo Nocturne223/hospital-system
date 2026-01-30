@@ -1,0 +1,27 @@
+# Hospital Management System - Python Dependencies
+
+# UI Framework
+streamlit>=1.28.0
+
+# Database
+mysql-connector-python>=8.2.0  # For MySQL support
+# sqlite3 is part of Python standard library
+
+# Testing
+pytest>=7.4.0
+
+# Date/Time Utilities
+python-dateutil>=2.8.2
+
+# Data Processing (for Streamlit)
+pandas>=2.0.0
+
+# Optional: Data Validation (can be added later)
+# pydantic>=2.0.0
+
+# Optional: ORM (can be added later if needed)
+# SQLAlchemy>=2.0.0
+
+# Development Tools (optional)
+# black>=23.0.0  # Code formatter
+# flake8>=6.0.0  # Linter
