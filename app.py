@@ -6,7 +6,7 @@ Main entry point for the web-based GUI
 import streamlit as st
 import sys
 import os
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time
 
 # Add src to path
 project_root = os.path.dirname(os.path.abspath(__file__))
@@ -104,19 +104,19 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Navigation menu items
+    # Navigation menu items (Dashboard first, then other features)
     nav_items = [
+        ("📊", "Dashboard"),
         ("👥", "Patient Management"),
         ("🏥", "Specialization Management"),
         ("📋", "Queue Management"),
         ("👨‍⚕️", "Doctor Management"),
-        ("📅", "Appointments"),
-        ("📊", "Reports & Analytics")
+        ("📅", "Appointments")
     ]
     
-    # Get current page from session state or default
+    # Get current page from session state or default to Reports & Analytics (Dashboard)
     if 'current_page' not in st.session_state:
-        st.session_state.current_page = "Patient Management"
+        st.session_state.current_page = "Dashboard"
     
     # Create navigation buttons
     st.sidebar.markdown("### 🧭 Navigation")
@@ -174,7 +174,9 @@ def main():
         pass
     
     # Main content area
-    if page == "Patient Management":
+    if page == "Dashboard":
+        show_reports_analytics()
+    elif page == "Patient Management":
         show_patient_management()
     elif page == "Specialization Management":
         show_specialization_management()
@@ -184,8 +186,6 @@ def main():
         show_doctor_management()
     elif page == "Appointments":
         show_appointment_management()
-    elif page == "Reports & Analytics":
-        show_reports_analytics()
 
 
 def show_patient_management():
@@ -658,7 +658,7 @@ def display_patients_table(service: PatientService, search_query: str = "", stat
         )
         
         # Find selected row(s) - only one should be selected
-        selected_rows = edited_df[edited_df['Select'] == True]
+        selected_rows: pd.DataFrame = edited_df[edited_df['Select'] == True]  # type: ignore
         
         if len(selected_rows) > 0:
             # Get the first selected row (in case multiple are selected)
@@ -1067,7 +1067,7 @@ def display_specializations_table(service: SpecializationService, search_query: 
             )
             
             # Find selected row(s) - only one should be selected
-            selected_rows = edited_df[edited_df['Select'] == True]
+            selected_rows: pd.DataFrame = edited_df[edited_df['Select'] == True]  # type: ignore
             
             if len(selected_rows) > 0:
                 # Get the first selected row (in case multiple are selected)
@@ -1411,7 +1411,7 @@ def display_all_queues_table(queue_service: QueueService, patient_service: Patie
         )
         
         # Find selected row(s)
-        selected_rows = edited_df[edited_df['Select'] == True]
+        selected_rows: pd.DataFrame = edited_df[edited_df['Select'] == True]  # type: ignore
         
         if len(selected_rows) > 0:
             selected_row = selected_rows.iloc[0]
@@ -1532,7 +1532,7 @@ def display_queue_table(queue_service: QueueService, patient_service: PatientSer
         )
         
         # Find selected row(s)
-        selected_rows = edited_df[edited_df['Select'] == True]
+        selected_rows: pd.DataFrame = edited_df[edited_df['Select'] == True]  # type: ignore
         
         if len(selected_rows) > 0:
             selected_row = selected_rows.iloc[0]
@@ -1919,7 +1919,7 @@ def display_doctors_table(service: DoctorService, search_query: str = "", status
         )
         
         # Find selected row(s) - only one should be selected
-        selected_rows = edited_df[edited_df['Select'] == True]
+        selected_rows: pd.DataFrame = edited_df[edited_df['Select'] == True]  # type: ignore
         
         if len(selected_rows) > 0:
             # Get the first selected row (in case multiple are selected)
@@ -2568,7 +2568,7 @@ def display_appointments_table(service: AppointmentService, patient_service: Pat
         )
         
         # Find selected row(s) - only one should be selected
-        selected_rows = edited_df[edited_df['Select'] == True]
+        selected_rows: pd.DataFrame = edited_df[edited_df['Select'] == True]  # type: ignore
         
         if len(selected_rows) > 0:
             selected_row = selected_rows.iloc[0]
@@ -2956,14 +2956,14 @@ def show_cancel_appointment_dialog(appointment_service: AppointmentService):
 
 
 def show_reports_analytics():
-    """Reports & Analytics page"""
-    st.title("📊 Reports & Analytics")
+    """Dashboard page (Reports & Analytics)"""
+    st.title("📊 Dashboard")
     st.markdown("---")
     
     report_service = st.session_state.report_service
     
     # Dashboard Summary
-    st.subheader("📈 Dashboard Summary")
+    st.subheader("📈 Reports & Analytics Summary")
     dashboard_summary = report_service.get_dashboard_summary()
     
     col1, col2, col3, col4, col5 = st.columns(5)
@@ -2980,12 +2980,13 @@ def show_reports_analytics():
     
     st.markdown("---")
     
-    # Report Type Selection
-    report_type = st.selectbox(
-        "📋 Select Report Type",
+    # Report Type Selection - Allow multiple selections
+    selected_reports = st.multiselect(
+        "📋 Select Report Types (Select multiple to view all at once)",
         ["Patient Statistics", "Queue Analytics", "Appointment Reports", 
          "Doctor Performance", "Specialization Utilization", "Custom Report"],
-        key="report_type"
+        default=["Patient Statistics", "Appointment Reports"],
+        key="report_types"
     )
     
     # Date Range Selection
@@ -2999,19 +3000,30 @@ def show_reports_analytics():
     
     st.markdown("---")
     
-    # Generate and display reports based on selection
-    if report_type == "Patient Statistics":
-        show_patient_reports(report_service, date_range)
-    elif report_type == "Queue Analytics":
-        show_queue_reports(report_service, date_range)
-    elif report_type == "Appointment Reports":
-        show_appointment_reports(report_service, date_range)
-    elif report_type == "Doctor Performance":
-        show_doctor_reports(report_service, date_range)
-    elif report_type == "Specialization Utilization":
-        show_specialization_reports(report_service)
-    elif report_type == "Custom Report":
-        show_custom_report(report_service, date_range)
+    # Generate and display reports based on selection (can show multiple)
+    if not selected_reports:
+        st.info("👆 Please select at least one report type to view analytics.")
+    else:
+        # Show all selected reports
+        for report_type in selected_reports:
+            if report_type == "Patient Statistics":
+                show_patient_reports(report_service, date_range)
+                st.markdown("---")
+            elif report_type == "Queue Analytics":
+                show_queue_reports(report_service, date_range)
+                st.markdown("---")
+            elif report_type == "Appointment Reports":
+                show_appointment_reports(report_service, date_range)
+                st.markdown("---")
+            elif report_type == "Doctor Performance":
+                show_doctor_reports(report_service, date_range)
+                st.markdown("---")
+            elif report_type == "Specialization Utilization":
+                show_specialization_reports(report_service)
+                st.markdown("---")
+            elif report_type == "Custom Report":
+                show_custom_report(report_service, date_range)
+                st.markdown("---")
 
 
 def show_patient_reports(report_service: ReportService, date_range: tuple):
