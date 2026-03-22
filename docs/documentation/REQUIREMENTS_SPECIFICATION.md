@@ -28,7 +28,7 @@
 
 ### Purpose
 
-This document specifies the complete requirements for the Hospital Management System, a comprehensive desktop application for managing hospital operations including patient management, queue systems, doctor assignments, and appointment scheduling.
+This document specifies the complete requirements for the Hospital Management System, an **Intelligent Hospital Management and Queueing System**: a **browser-based** operational dashboard built with **Python** and **Streamlit**, managing patient records, queues, doctors, specializations, appointments, and Dashboard analytics.
 
 ### Scope
 
@@ -179,6 +179,10 @@ The system provides:
 
 ## Non-Functional Requirements
 
+### 3.1 Technology stack (Beta.ver.1.1)
+
+See **§ System Constraints — SC1** for the authoritative list: **Streamlit** presentation, **Pandas** + native Streamlit charts (**no Plotly** in baseline requirements), **Python 3.9+**, and **MySQL or SQLite** via **`src/config.py`** / **`USE_MYSQL`**.
+
 ### NFR1: Performance
 
 - **Response Time**: UI operations < 1 second
@@ -223,18 +227,19 @@ The system provides:
 
 ## System Constraints
 
-### SC1: Technology Constraints
+### SC1: Technology Constraints (Beta.ver.1.1)
 
-- **Language**: Python 3.8+
-- **Database**: SQLite (can migrate to MySQL/PostgreSQL)
-- **UI Framework**: PyQt6
-- **Platform**: Desktop application
+- **Language**: Python 3.9+ (see `requirements.txt`)
+- **Database**: **SQLite** and **MySQL** supported; select via **`USE_MYSQL`** in `src/config.py` (strategy-style binding in `src/database/__init__.py`)
+- **UI Framework**: **Streamlit** (reactive widgets, interaction-driven reruns)
+- **Platform**: **Browser-based web application** (HTTP to local Streamlit server)
+- **Charts / analytics**: **Pandas** + Streamlit native APIs (e.g. **`st.bar_chart`**); separate charting libraries such as **Plotly** are not part of the baseline dependency set
 
 ### SC2: Resource Constraints
 
 - **Memory**: Efficient memory usage
 - **Storage**: Minimal disk space requirements
-- **Network**: No network requirements (standalone)
+- **Network**: Browser access to Streamlit server (typically `localhost`); optional LAN for shared demos
 
 ### SC3: Regulatory Constraints
 
@@ -310,9 +315,9 @@ The system provides:
 
 ### IR2: Database Interface
 
-- **Type**: SQLite (file-based)
-- **Location**: `data/hospital_system.db`
-- **Backup**: `data/backups/`
+- **Type**: **SQLite** (file) **or** **MySQL** (e.g. XAMPP), per `src/config.py`
+- **SQLite default path**: `data/hospital_system.db` (when `USE_MYSQL = False`)
+- **Backup**: project `DatabaseManager` backup helpers / manual file copy as applicable
 
 ### IR3: External Interfaces
 
@@ -402,10 +407,10 @@ The system provides:
 | FR2.1 | Add to Queue | ✅ | Implemented |
 | FR2.3 | Process Next Patient | ✅ | Implemented |
 | FR3.1 | Create Specialization | ✅ | Implemented |
-| FR4.1 | Doctor Registration | ⏳ | In Progress |
-| FR5.1 | Schedule Appointment | ⏳ | Planned |
-| FR6.1 | Patient Statistics | ⏳ | Planned |
-| FR7.1 | User Authentication | ⏳ | Planned |
+| FR4.1 | Doctor Registration | ✅ | Complete (Streamlit Doctor Management) |
+| FR5.1 | Schedule Appointment | ✅ | Complete (Streamlit Appointments; conflict detection) |
+| FR6.1 | Patient Statistics | ✅ | Complete (Dashboard / Reports & Analytics) |
+| FR7.1 | User Authentication | ✅ | Complete for Beta v1.1 scope (trusted workstation; no dedicated login UI — see project scope docs) |
 
 ---
 
@@ -426,5 +431,5 @@ The system provides:
 
 ---
 
-**Last Updated**: January 30, 2026  
-**Version**: 1.0
+**Last Updated**: March 2026  
+**Version**: Beta.ver.1.1

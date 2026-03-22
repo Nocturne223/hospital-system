@@ -97,7 +97,7 @@ def add_comprehensive_data():
             'date_of_birth': (today - timedelta(days=random.randint(18*365, 80*365))).isoformat(),
             'gender': random.choice(genders),
             'phone_number': f"555-{random.randint(1000, 9999)}",
-            'email': f"patient{i+100}@example.com",
+            'email': f"patient{i+100}@gmail.com",
             'address': f"{random.randint(100, 9999)} Main St, City, State",
             'status': random.choice(statuses),
             'registration_date': registration_date.isoformat()

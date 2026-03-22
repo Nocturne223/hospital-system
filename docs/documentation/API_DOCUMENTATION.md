@@ -2,9 +2,9 @@
 
 ## Overview
 
-This document describes the Service Layer API for the Hospital Management System. The API provides business logic methods for all system operations.
+This document describes the **Service Layer API** for the Hospital Management System. These are **Python class methods** invoked from the **Streamlit** presentation layer (`app.py`), not HTTP REST endpoints.
 
-**Note**: This is a desktop application with service layer APIs, not a REST API.
+**Note**: This is a **web-based application** (browser + Streamlit) with a **service-oriented backend**. Business logic lives in `src/services/`; the UI calls services directly in-process.
 
 ---
 
@@ -24,25 +24,31 @@ This document describes the Service Layer API for the Hospital Management System
 
 ### Class: `DatabaseManager`
 
-Manages database connections and operations.
+The symbol **`DatabaseManager`** is imported from **`src.database`**. At runtime it resolves to either:
 
-#### Constructor
+- **SQLite:** `DatabaseManager(db_path=...)` — file-based storage (see `src/database/db_manager.py`), or  
+- **MySQL:** `MySQLDatabaseManager(host=..., port=..., user=..., password=..., database=...)` — when **`USE_MYSQL = True`** in `src/config.py` (see `src/database/mysql_db_manager.py`).
 
+Selection is performed in **`src/database/__init__.py`** (strategy-style). **Services** always depend on this single imported name so application code stays database-agnostic.
+
+#### Constructors (depending on engine)
+
+**SQLite (`USE_MYSQL = False`):**
 ```python
 DatabaseManager(db_path: str = 'data/hospital_system.db')
 ```
+- **`db_path`**: Path to the SQLite database file.
 
-**Parameters:**
-- `db_path` (str): Path to SQLite database file
+**MySQL (`USE_MYSQL = True`):** constructed inside `app.py` / init using **`MYSQL_CONFIG`** keys, e.g. host, port, user, password, database — not the `db_path` signature.
 
-**Returns:** DatabaseManager instance
-
-**Example:**
+**Example (SQLite):**
 ```python
-from src.database import DatabaseManager
+from database import DatabaseManager  # when src is on path, as in app.py
 
-db = DatabaseManager('data/hospital_system.db')
+db = DatabaseManager(db_path='data/hospital_system.db')
 ```
+
+**Example (MySQL):** pass connection parameters as implemented in `app.py` when `USE_MYSQL` is true (see `init_database()` in `app.py`).
 
 #### Methods
 

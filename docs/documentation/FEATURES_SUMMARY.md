@@ -1,232 +1,119 @@
-# Hospital Management System - Features Summary
+# Hospital Management System — Features Summary
 
-## Overview
-This document provides a quick reference to all features planned for the Hospital Management System. Each feature has a dedicated implementation document in the `features/` directory.
+**Beta.ver.1.1 — LATEST**  
+This document summarizes feature areas and their **implementation status** in the current Streamlit-based HMS. Detailed narratives remain in the `features/` directory where applicable.
 
-## Feature List
+## Feature list
 
 ### 1. Enhanced Patient Management
 **File**: `features/01-patient-management.md`
 
-**Key Features**:
-- Comprehensive patient registration with full profile
-- Patient search and filtering
-- Patient history tracking
-- Status management (Normal/Urgent/Super-Urgent)
-- Full CRUD operations
+**Key capabilities (implemented)**:
+- Patient registration and profiles, search/filter, triage status (Normal / Urgent / Super-Urgent), CRUD via **`PatientService`** and Streamlit UI.
 
-**Estimated Effort**: 28 hours
+**Status**: **Implemented** (Streamlit)
 
 ---
 
 ### 2. Enhanced Specialization Management
 **File**: `features/02-specialization-management.md`
 
-**Key Features**:
-- Specialization CRUD operations
-- Configurable queue capacity
-- Doctor assignment to specializations
-- Specialization statistics
-- Active/inactive status management
+**Key capabilities (implemented)**:
+- Specialization CRUD, queue capacity, active/inactive, utilization context in lists.
 
-**Estimated Effort**: 24 hours
+**Status**: **Implemented**
 
 ---
 
 ### 3. Enhanced Queue Management
 **File**: `features/03-queue-management.md`
 
-**Key Features**:
-- Real-time queue visualization
-- Priority-based queue ordering
-- Queue capacity management
-- Wait time estimation
-- Queue analytics and reporting
+**Key capabilities (implemented)**:
+- Priority-based ordering (**Super-Urgent > Urgent > Normal**, then **FIFO** by `joined_at`), capacity enforcement, serve/next, row actions, analytics panel.
 
-**Estimated Effort**: 37 hours
+**Status**: **Implemented**
 
 ---
 
 ### 4. Doctor Management
 **File**: `features/04-doctor-management.md`
 
-**Key Features**:
-- Doctor registration and profiles
-- Doctor-specialization assignments
-- Availability management
-- Working hours configuration
-- Doctor statistics and workload tracking
+**Key capabilities (implemented)**:
+- Doctor profiles, multi-specialization assignment, employment status, soft-delete pattern where applicable.
 
-**Estimated Effort**: 33 hours
+**Status**: **Implemented**
 
 ---
 
 ### 5. Appointment System
 **File**: `features/05-appointment-system.md`
 
-**Key Features**:
-- Appointment scheduling
-- Calendar views (daily/weekly/monthly)
-- Appointment reminders
-- Conflict detection
-- Appointment history tracking
+**Key capabilities (implemented)**:
+- Schedule, edit, complete, cancel; **doctor overlap conflict detection** (time + duration).
 
-**Estimated Effort**: 49 hours
+**Status**: **Implemented**
 
 ---
 
 ### 6. User Interface & Experience
 **File**: `features/06-user-interface.md`
 
-**Key Features**:
-- Modern graphical user interface (PyQt6 recommended)
-- Dashboard with overview and statistics
-- Intuitive navigation
-- Responsive design
-- Professional appearance
+**Key capabilities (implemented)**:
+- **Browser-based Streamlit** application: sidebar navigation, forms, `st.data_editor`, metrics, **native Streamlit charts** (`st.bar_chart`) with **Pandas** — **no Plotly** in baseline dependencies.
 
-**Estimated Effort**: 60 hours
+**Status**: **Implemented**
 
 ---
 
 ### 7. Reporting & Analytics
 **File**: `features/07-reporting-analytics.md`
 
-**Key Features**:
-- Patient statistics reports
-- Queue analytics
-- Appointment reports
-- Doctor performance reports
-- Specialization utilization reports
-- Custom report builder
-- Export functionality (PDF/Excel/CSV)
+**Key capabilities (implemented)**:
+- **Dashboard** module: multiselect report types, date range, patient/queue/appointment/doctor/specialization summaries, custom report builder. Export depth may vary; core reporting is live in-app.
 
-**Estimated Effort**: 40 hours
+**Status**: **Implemented**
 
 ---
 
 ### 8. Data Management & Persistence
 **File**: `features/08-data-management.md`
 
-**Key Features**:
-- Database schema design (SQLite)
-- Full data persistence
-- Backup and restore functionality
-- Data export/import (SQL/CSV/JSON)
-- Database migrations
-- Data integrity and validation
+**Key capabilities (implemented)**:
+- Relational schema, **SQLite or MySQL** via `src/config.py`, backup-oriented APIs where present in `DatabaseManager`.
 
-**Estimated Effort**: 42 hours
+**Status**: **Implemented** (dual-database strategy)
 
 ---
 
 ### 9. Security & Authentication
 **File**: `features/09-security-authentication.md`
 
-**Key Features**:
-- User authentication system
-- Role-based access control (Administrator, Doctor, Receptionist, Nurse, Viewer)
-- Password security (hashing, strength requirements)
-- Session management
-- Audit logging
+**Key capabilities**:
+- **Beta v1.1** operates on a **trusted workstation** model; dedicated login/RBAC UI is **not** part of the baseline Streamlit shell. Schema may include `users` for future work.
 
-**Estimated Effort**: 40 hours
+**Status**: **Partial / future** (documented in Beta scope as out of baseline UI)
 
 ---
 
-## Total Estimated Effort
+## Implementation priority — **100% complete** (delivered scope)
 
-**Combined Total**: ~353 hours
+| Phase | Scope | Status |
+|-------|--------|--------|
+| **Phase 1** | Data layer, Patient, Specialization, Queue, Streamlit shell | **Complete** |
+| **Phase 2** | Doctor, Appointments, UI polish | **Complete** |
+| **Phase 3** | Dashboard / Reporting & Analytics, documentation alignment | **Complete** |
 
-**Note**: This is a rough estimate. Actual time may vary based on:
-- Developer experience
-- Framework familiarity
-- Testing requirements
-- Documentation needs
-- Bug fixes and refinements
-
-## Feature Dependencies
-
-```
-Data Management (8) ──┐
-                      │
-Security (9) ─────────┼──> All Features
-                      │
-Patient Management (1) ──┐
-                         │
-Specialization (2) ──────┼──> Queue Management (3)
-                         │
-Doctor Management (4) ───┘
-                         │
-                         ├──> Appointment System (5)
-                         │
-Queue Management (3) ────┘
-                         │
-All Features ────────────┼──> UI/UX (6)
-                         │
-All Features ────────────┼──> Reporting (7)
-```
-
-## Implementation Priority
-
-### Phase 1: Foundation (Weeks 1-3)
-1. Data Management (Feature 8)
-2. Patient Management (Feature 1)
-3. Specialization Management (Feature 2)
-4. Queue Management (Feature 3)
-5. Basic UI Setup (Feature 6)
-
-### Phase 2: Advanced Features (Weeks 4-5)
-1. Doctor Management (Feature 4)
-2. Appointment System (Feature 5)
-3. Security & Authentication (Feature 9)
-4. UI Enhancement (Feature 6)
-
-### Phase 3: Analytics & Polish (Weeks 6-7)
-1. Reporting & Analytics (Feature 7)
-2. UI/UX Polish (Feature 6)
-3. Testing & Bug Fixes
-4. Documentation
-
-## Quick Start Guide
-
-1. **Review Documentation**:
-   - Read `PROJECT_GUIDELINES.md` for requirements
-   - Read `docs/implementation/PROJECT_IMPLEMENTATION_PLAN.md` for overall plan
-   - Review individual feature documents as needed
-
-2. **Set Up Environment**:
-   - Install Python 3.8+
-   - Install required packages (see requirements.txt)
-   - Set up database
-
-3. **Start Implementation**:
-   - Begin with Feature 8 (Data Management)
-   - Follow dependency order
-   - Test as you go
-
-4. **Track Progress**:
-   - Use feature checklists
-   - Update acceptance criteria
-   - Document decisions
-
-## Notes
-
-- Each feature document contains:
-  - Current state analysis
-  - Target state definition
-  - Detailed requirements
-  - Technical implementation details
-  - Database schemas
-  - UI component specifications
-  - Implementation steps
-  - Acceptance criteria
-  - Estimated effort
-
-- Features can be implemented in parallel where there are no dependencies
-- Adjust priorities based on project timeline and requirements
-- Regular testing and integration is recommended throughout development
+*Full enterprise security, RBAC UI, and external export pipelines may be tracked as future enhancements outside Beta v1.1 UI scope.*
 
 ---
 
-*For detailed information on each feature, refer to the individual feature documents in the `features/` directory.*
+## Quick start (current app)
+
+1. `pip install -r requirements.txt`
+2. Configure `src/config.py` (`USE_MYSQL` / `MYSQL_CONFIG` / `SQLITE_CONFIG`)
+3. Initialize database per project scripts as needed
+4. Run: **`python -m streamlit run app.py`** or **`run_streamlit.bat`**
+
+---
+
+*For detailed requirements per feature, see individual files under `features/`.*

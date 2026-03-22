@@ -69,7 +69,7 @@ class PatientDialog(QDialog):
         form.addRow("Phone Number:", self.phone_input)
         
         self.email_input = QLineEdit()
-        self.email_input.setPlaceholderText("email@example.com")
+        self.email_input.setPlaceholderText("name@gmail.com")
         form.addRow("Email:", self.email_input)
         
         self.address_input = QTextEdit()

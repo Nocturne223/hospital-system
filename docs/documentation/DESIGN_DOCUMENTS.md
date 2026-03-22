@@ -2,10 +2,10 @@
 
 ## Document Information
 
-**Project**: Hospital Management System  
-**Version**: 1.0  
-**Date**: January 30, 2026  
-**Status**: Complete
+**Project**: Intelligent Hospital Management and Queueing System (HMS)  
+**Version**: Beta.ver.1.1 — LATEST  
+**Date**: March 2026  
+**Status**: Complete (documentation aligned with Streamlit implementation)
 
 ---
 
@@ -39,22 +39,24 @@ The system uses a **Layered Architecture** with three main layers:
 
 ```
 ┌─────────────────────────────────────┐
-│      Presentation Layer (UI)        │
-│         PyQt6 Components             │
+│   Presentation Layer (Browser UI)   │
+│   Streamlit: reactive widgets,      │
+│   interaction-driven reruns,        │
+│   st.session_state, st.bar_chart    │
 └──────────────┬──────────────────────┘
                │
 ┌──────────────▼──────────────────────┐
-│     Business Logic Layer (Services)  │
-│    PatientService, QueueService, etc.│
+│     Service Layer (Business Logic)  │
+│  Patient, Queue, Doctor, Appt, etc. │
 └──────────────┬──────────────────────┘
                │
 ┌──────────────▼──────────────────────┐
-│    Data Access Layer (Database)     │
-│        DatabaseManager               │
+│    Data Access Layer                │
+│  DatabaseManager (MySQL or SQLite)  │
 └──────────────┬──────────────────────┘
                │
 ┌──────────────▼──────────────────────┐
-│         Database (SQLite)           │
+│   Database (MySQL or SQLite file)   │
 └─────────────────────────────────────┘
 ```
 
@@ -65,13 +67,14 @@ The system uses a **Layered Architecture** with three main layers:
 ### Layer Responsibilities
 
 #### Presentation Layer
-- **Purpose**: User interface and user interactions
-- **Components**: Windows, widgets, dialogs
+- **Purpose**: Browser-based user interface and user interactions
+- **Components**: Streamlit `app.py` — sidebar navigation, forms, `st.data_editor`, metrics, multiselect report picker, native charts (e.g. `st.bar_chart`)
+- **Execution model**: **Interaction-driven** — each user action reruns the Streamlit script; widgets rebuild from current service/database state
 - **Responsibilities**:
   - Display data to users
   - Capture user input
-  - Validate input at UI level
-  - Provide user feedback
+  - Validate input at UI level where appropriate
+  - Provide immediate feedback (success/error) after service calls
 
 #### Business Logic Layer
 - **Purpose**: Business rules and operations
@@ -94,17 +97,17 @@ The system uses a **Layered Architecture** with three main layers:
 ### Data Flow
 
 ```
-User Action
+User Action (browser)
     ↓
-UI Component
+Streamlit widget event → script rerun
     ↓
 Service Layer (Business Logic)
     ↓
-Database Manager
+Database Manager (MySQL or SQLite)
     ↓
-SQLite Database
+Relational Database
     ↓
-Response (reverse flow)
+Response → UI update on next render
 ```
 
 ---
@@ -203,29 +206,18 @@ class QueueService:
     + remove_from_queue(entry_id: int) -> bool
 ```
 
-### UI Classes
+### Presentation structure (Streamlit)
 
-#### MainWindow
-```python
-class MainWindow(QMainWindow):
-    """Main application window"""
-    - menu_bar: QMenuBar
-    - status_bar: QStatusBar
-    - central_widget: QWidget
-    + setup_ui()
-    + setup_menu()
+#### Application shell (`app.py`)
+```text
+- st.set_page_config(...)
+- init_database() → constructs DatabaseManager + injects into all services → st.session_state
+- Sidebar: navigation buttons (Dashboard, Patient, Specialization, Queue, Doctor, Appointments)
+- Route by st.session_state.current_page → show_*_management() or show_reports_analytics()
 ```
 
-#### PatientWidget
-```python
-class PatientWidget(QWidget):
-    """Patient management UI"""
-    - patient_service: PatientService
-    - table: QTableWidget
-    + setup_ui()
-    + on_add_patient()
-    + on_search()
-```
+#### Module pages
+Each major feature is implemented as a function group in `app.py` (forms, tables, buttons) calling the corresponding **service**; no PyQt6 windows or Qt widgets.
 
 ---
 
@@ -238,23 +230,20 @@ class PatientWidget(QWidget):
 3. **Efficiency**: Minimal clicks to complete tasks
 4. **Feedback**: Clear response to user actions
 
-### Layout Structure
+### Layout Structure (browser)
 
 ```
-┌─────────────────────────────────────────┐
-│  Menu Bar (File, Edit, View, Help)      │
-├─────────────────────────────────────────┤
-│  Toolbar (Quick Actions)                │
-├─────────────────────────────────────────┤
-│                                          │
-│  Main Content Area                      │
-│  (Tabs/Views for different features)     │
-│                                          │
-│                                          │
-├─────────────────────────────────────────┤
-│  Status Bar (Status, Notifications)      │
-└─────────────────────────────────────────┘
+┌──────────────┬──────────────────────────────────────────┐
+│   Sidebar    │  Main area                                │
+│  • Branding  │  • Page title + metrics                   │
+│  • Nav (6)   │  • Search / filters                       │
+│  • Status    │  • Action buttons                         │
+│  • Quick     │  • Forms (add/edit) when open             │
+│    stats     │  • st.data_editor tables + charts         │
+└──────────────┴──────────────────────────────────────────┘
 ```
+
+**Dashboard:** multiselect report types, date range, **Pandas**-backed metrics, **Streamlit** `st.bar_chart` (lightweight; Plotly not in baseline requirements).
 
 ### Color Scheme
 
@@ -290,29 +279,15 @@ class ServiceFactory:
         return PatientService(DatabaseManager())
 ```
 
-### 3. Observer Pattern
+### 3. Presentation refresh model (Streamlit)
 
-PyQt6 signals and slots for UI updates:
-```python
-class QueueWidget(QWidget):
-    queue_updated = pyqtSignal()
-    
-    def update_queue(self):
-        self.queue_updated.emit()
-```
+The UI does not use Qt signals/slots. **User interaction triggers a full script rerun**; the presentation layer re-invokes services and redraws widgets. Shared state (database handle, services, navigation page, table selection) lives in **`st.session_state`**.
 
 ### 4. Strategy Pattern
 
-Queue ordering strategies:
-```python
-class QueueOrderingStrategy:
-    def order_patients(self, patients):
-        pass
+**Database strategy (composition root):** `src/database/__init__.py` selects **MySQL** (`MySQLDatabaseManager`) or **SQLite** (`DatabaseManager`) based on `USE_MYSQL` in `src/config.py`, exporting a single **`DatabaseManager`** symbol for dependency injection into services.
 
-class PriorityQueueStrategy(QueueOrderingStrategy):
-    def order_patients(self, patients):
-        return sorted(patients, key=lambda p: p.status, reverse=True)
-```
+**Queue ordering (implemented policy):** Active queue entries are sorted **priority first** (Super-Urgent > Urgent > Normal via `status DESC`), then **FIFO** by **`joined_at ASC`** in `QueueService.get_queue` (SQL-level ordering for consistency).
 
 ### 5. Repository Pattern
 
@@ -349,17 +324,18 @@ patients = db.execute_query("SELECT * FROM patients")
          │ uses
          │
 ┌────────▼─────────┐
-│  PatientWidget   │
+│  Streamlit UI    │
+│  (app.py pages)  │
 ├──────────────────┤
-│ -patient_service │
-│ +on_add_patient()│
+│ session services │
+│ + on_click_*()   │
 └──────────────────┘
 ```
 
 ### Sequence Diagram: Add Patient to Queue
 
 ```
-User    PatientWidget    QueueService    DatabaseManager    Database
+User    Streamlit UI    QueueService    DatabaseManager    Database
  │            │                │                │              │
  │──click──>  │                │                │              │
  │            │──add_to_queue─>│                │              │
@@ -410,23 +386,22 @@ User    PatientWidget    QueueService    DatabaseManager    Database
 - Clear responsibilities
 - Industry standard
 
-### Decision 2: SQLite Database
+### Decision 2: MySQL or SQLite (configurable)
 
-**Decision**: Use SQLite for data storage  
+**Decision**: Support **MySQL** (e.g. XAMPP) and **SQLite** via configuration (`src/config.py`, `USE_MYSQL`).  
 **Rationale**:
-- Zero configuration
-- Single file database
-- Sufficient for project scope
-- Easy to backup
+- MySQL suits networked lab and demo environments
+- SQLite offers zero-server, file-based runs for portability
+- **Dependency injection** at the app entry keeps **services database-agnostic**
 
-### Decision 3: PyQt6 for UI
+### Decision 3: Streamlit for UI (browser-based)
 
-**Decision**: Use PyQt6 for user interface  
+**Decision**: Use **Streamlit** for the presentation layer — a **browser-based web application**, not a desktop Qt client.  
 **Rationale**:
-- Modern and professional
-- Cross-platform
-- Rich widget set
-- Good documentation
+- Rapid development of forms, tables, and charts in pure Python
+- **Reactive** widget model aligned with course focus on backend OOP
+- **Native chart APIs** (`st.bar_chart`) plus **Pandas** avoid pulling in a separate charting stack (e.g. Plotly) for baseline analytics
+- Accessible on LAN via browser without installing a desktop shell per seat
 
 ### Decision 4: Service Layer Pattern
 
@@ -439,12 +414,19 @@ User    PatientWidget    QueueService    DatabaseManager    Database
 
 ### Decision 5: Priority-Based Queue
 
-**Decision**: Automatic priority-based queue ordering  
+**Decision**: **Priority-first** ordering (Super-Urgent > Urgent > Normal), with **FIFO** among equals using **`joined_at`**.  
 **Rationale**:
-- Fair patient processing
-- Urgent cases handled first
-- Automatic sorting
-- No manual intervention needed
+- Clinical urgency dominates; same-tier patients are served in arrival order
+- Implemented in `QueueService.get_queue` with `ORDER BY status DESC, joined_at ASC`
+- Reduces manual reordering while keeping predictable behavior
+
+### Decision 6: Appointment conflict detection
+
+**Decision**: Block new or updated appointments when the same **doctor** has an **overlapping time interval** (start time plus **duration**) with an existing active booking.  
+**Rationale**:
+- Prevents double-booking without relying on manual calendar checks
+- Implemented in `AppointmentService.check_conflicts` and invoked from create/update paths
+- Surfaces a clear error in the Streamlit scheduling UI when a conflict exists
 
 ---
 
@@ -452,10 +434,10 @@ User    PatientWidget    QueueService    DatabaseManager    Database
 
 ### Technical Constraints
 
-- Python 3.8+ required
-- Desktop application (not web-based)
-- SQLite database (file-based)
-- Single-user or small team usage
+- Python 3.9+ recommended (see `requirements.txt`)
+- **Browser-based** application (Streamlit); not a PyQt6 desktop executable
+- **MySQL or SQLite** per configuration; not locked to a single engine
+- Suited to pilot, classroom, or small-team intranet use; production scale requires further hardening (authentication, formal load testing, compliance review)
 
 ### Business Constraints
 
@@ -484,18 +466,18 @@ User    PatientWidget    QueueService    DatabaseManager    Database
 
 ### Potential Enhancements
 
-1. **Web Interface**: Add web-based UI
-2. **Mobile App**: Mobile companion app
-3. **Cloud Storage**: Cloud database integration
-4. **API**: RESTful API for external integration
-5. **Microservices**: Split into microservices
+1. **Patient portal** and authenticated multi-user access (RBAC)
+2. **REST or GraphQL API** alongside Streamlit for third-party integrations
+3. **Mobile-optimized** or companion PWA
+4. **Cloud-hosted** database and CI/CD packaging
+5. **Microservices** only if scale and team structure justify operational complexity
 
 ### Scalability Considerations
 
-- Database migration to PostgreSQL/MySQL
-- Caching layer for performance
-- Load balancing for multi-user
-- Distributed architecture
+- PostgreSQL or managed MySQL for larger concurrency
+- Caching layer for heavy reporting
+- Load balancing and session affinity for multi-instance Streamlit (if adopted)
+- **Appointment conflict detection** and **queue ordering** remain service-layer concerns if the presentation tier changes
 
 ---
 
@@ -508,5 +490,5 @@ This design document provides:
 - ✅ Scalable structure
 - ✅ Professional software engineering
 
-**Last Updated**: January 30, 2026  
-**Version**: 1.0
+**Last Updated**: March 2026  
+**Version**: Beta.ver.1.1 — LATEST

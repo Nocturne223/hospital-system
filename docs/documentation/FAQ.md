@@ -16,7 +16,7 @@
 ## General Questions
 
 ### Q: What is the Hospital Management System?
-**A:** The Hospital Management System is a comprehensive desktop application designed to manage hospital operations including patient registration, queue management, doctor assignments, appointment scheduling, and reporting.
+**A:** The Hospital Management System is a **browser-based** application built with **Python** and **Streamlit**. You run `python -m streamlit run app.py` (or `run_streamlit.bat` on Windows) and use the **Dashboard**, **Patient**, **Specialization**, **Queue**, **Doctor**, and **Appointments** modules in your web browser. It supports patient registration, priority-based queues, doctors and specializations, appointment scheduling (with conflict detection), and **Reports & Analytics** on the Dashboard using **Pandas** and Streamlit’s native chart APIs (e.g. `st.bar_chart`).
 
 ### Q: Who can use this system?
 **A:** The system is designed for hospital staff including administrators, doctors, receptionists, and nurses. Each user role has appropriate access levels.
@@ -36,10 +36,11 @@
 
 ### Q: How do I install the system?
 **A:** 
-1. Ensure Python 3.8+ is installed
+1. Ensure Python 3.9+ is installed (see `requirements.txt`)
 2. Install dependencies: `pip install -r requirements.txt`
-3. Initialize database: `python src/database/init_db.py`
-4. Run application: `python src/main.py`
+3. Configure `src/config.py` (`USE_MYSQL` and MySQL or SQLite settings)
+4. Initialize the database using the project’s init/seed scripts as needed
+5. Run the application: **`python -m streamlit run app.py`** or **`run_streamlit.bat`**
 
 ### Q: What are the system requirements?
 **A:**
@@ -49,7 +50,7 @@
 - 1280x720 minimum screen resolution
 
 ### Q: Do I need to install a database server?
-**A:** No, the system uses SQLite which is file-based and requires no separate server installation.
+**A:** **Not necessarily.** With **`USE_MYSQL = False`** in `src/config.py`, the system uses **SQLite**, which is file-based and needs **no** separate database server—ideal for quick setup. With **`USE_MYSQL = True`**, the system **fully supports MySQL** (for example via **XAMPP**): start MySQL, create the `hospital_system` database, match credentials in `src/config.py`, and restart Streamlit. Both modes use the same service layer; only configuration changes.
 
 ### Q: How do I update the system?
 **A:** 
@@ -59,8 +60,8 @@
 4. Run database migrations if needed
 5. Restore database backup
 
-### Q: Can I use MySQL or PostgreSQL instead of SQLite?
-**A:** Yes, the system can be configured to use MySQL or PostgreSQL. See the [XAMPP/Navicat Setup Guide](XAMPP_NAVICAT_SETUP.md) for details.
+### Q: Can I use MySQL instead of SQLite?
+**A:** Yes. Set **`USE_MYSQL = True`** in `src/config.py` and configure **`MYSQL_CONFIG`**. MySQL is **integrated** in the codebase (no manual rewrite of `DatabaseManager` for normal switching). See [XAMPP_NAVICAT_SETUP.md](XAMPP_NAVICAT_SETUP.md). PostgreSQL is not the default documented engine for this project.
 
 ---
 

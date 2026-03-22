@@ -1,448 +1,372 @@
-# Hospital Management System - User Manual
+# Hospital Management System — User Manual
 
-## Table of Contents
-
-1. [Introduction](#introduction)
-2. [Getting Started](#getting-started)
-3. [System Overview](#system-overview)
-4. [Features Guide](#features-guide)
-5. [Common Tasks](#common-tasks)
-6. [Troubleshooting](#troubleshooting)
-7. [Keyboard Shortcuts](#keyboard-shortcuts)
-8. [Glossary](#glossary)
+This manual describes the **Streamlit web application** (`app.py`). It focuses on **where to click**, **what to type or select**, and **the order of controls** on each screen.
 
 ---
 
-## Introduction
+## 1. Audience and purpose
 
-### Welcome
-
-Welcome to the Hospital Management System! This comprehensive system is designed to help hospital staff manage patients, doctors, specializations, queues, and appointments efficiently.
-
-### What is This System?
-
-The Hospital Management System is a desktop application that provides:
-- **Patient Management**: Register and manage patient information
-- **Queue Management**: Manage patient queues by specialization with priority-based ordering
-- **Doctor Management**: Manage doctor profiles and assignments
-- **Appointment Scheduling**: Schedule and manage patient appointments
-- **Reporting**: Generate reports and analytics
-- **User Management**: Role-based access control
-
-### System Requirements
-
-- **Operating System**: Windows 10/11, macOS 10.14+, or Linux
-- **Python**: Version 3.8 or higher
-- **RAM**: Minimum 4GB (8GB recommended)
-- **Storage**: 500MB free space
-- **Display**: 1280x720 minimum resolution
+The system is for **hospital staff** who manage patients, departments (specializations), queues, doctors, appointments, and reports.
 
 ---
 
-## Getting Started
+## 2. Prerequisites and startup
 
-### Installation
+- **Python 3**, dependencies from `requirements.txt`, database configured in **`src/config.py`** (MySQL via XAMPP or SQLite).
 
-1. **Download the Application**
-   - Download the project files
-   - Extract to your desired location
+**Start the app** (project folder = folder containing `app.py`):
 
-2. **Install Python Dependencies**
    ```bash
-   pip install -r requirements.txt
-   ```
+python -m streamlit run app.py
+```
 
-3. **Initialize Database**
-   ```bash
-   python src/database/init_db.py
-   ```
+Or on Windows: run **`run_streamlit.bat`**.
 
-4. **Run the Application**
-   ```bash
-   python src/main.py
-   ```
-
-### First Launch
-
-1. **Login Screen**
-   - Enter your username and password
-   - Default administrator credentials (if applicable)
-   - Click "Login"
-
-2. **Dashboard**
-   - You'll see the main dashboard
-   - Overview of system statistics
-   - Quick access to main features
-
-### User Interface Overview
-
-The application has a modern, intuitive interface with:
-- **Menu Bar**: Access to all features
-- **Toolbar**: Quick actions
-- **Main Area**: Content display
-- **Status Bar**: System status and notifications
+If the database fails, the main area shows **Database Connection Failed** and troubleshooting text; the sidebar navigation does not load normal content until this is fixed.
 
 ---
 
-## System Overview
+## 3. How the interface behaves (Streamlit)
 
-### Main Components
-
-#### 1. Dashboard
-- System overview and statistics
-- Quick access to common tasks
-- Recent activity display
-
-#### 2. Patient Management
-- Register new patients
-- View patient profiles
-- Search and filter patients
-- Update patient information
-
-#### 3. Queue Management
-- View queues by specialization
-- Add patients to queues
-- Process next patient
-- Monitor queue status
-
-#### 4. Doctor Management
-- Register doctors
-- Assign doctors to specializations
-- Manage doctor schedules
-- View doctor profiles
-
-#### 5. Appointment System
-- Schedule appointments
-- View appointment calendar
-- Manage appointments
-- Appointment reminders
-
-#### 6. Specialization Management
-- Create specializations
-- Set capacity limits
-- Assign doctors
-- View statistics
-
-#### 7. Reporting
-- Patient statistics
-- Queue analytics
-- Appointment reports
-- System usage reports
+- The **left sidebar** is fixed: branding, **Navigation** buttons, **System status**, **Quick Stats**.
+- The **main area** (right) shows the page for the current navigation choice.
+- After many **button** clicks, the app **reruns** the page; forms and tables refresh. If something “jumps,” scroll back to the section you were using.
+- **Tables** that support actions use a **Select** column (checkbox). Select **one** row, then use the **action buttons above the table** (not below), unless the on-screen instructions say otherwise.
 
 ---
 
-## Features Guide
+## 4. Sidebar: global navigation (always visible)
 
-### Patient Management
+Read the sidebar **from top to bottom**.
 
-#### Registering a New Patient
+| Step | What you see | What to do |
+|------|----------------|------------|
+| 1 | Title area: **Hospital Management** / **Management System** | (Information only) |
+| 2 | **Navigation** heading | — |
+| 3 | Six **navigation buttons** (full width) | **Click one** to switch the main page. Only one page is active at a time; the active button is styled as the primary button. |
 
-1. Navigate to **Patients** → **New Patient**
-2. Fill in the required information:
-   - Full Name (required)
-   - Date of Birth (required)
-   - Gender
-   - Contact Information
-   - Emergency Contact
-   - Medical Information
-3. Set patient status:
-   - **Normal** (0): Regular patient
-   - **Urgent** (1): Requires priority
-   - **Super-Urgent** (2): Highest priority
-4. Click **Save**
+**Navigation button labels (click exactly these):**
 
-#### Searching for a Patient
+| Button label | Opens |
+|--------------|--------|
+| **📊 Dashboard** | Reports & analytics |
+| **👥 Patient Management** | Patients |
+| **🏥 Specialization Management** | Specializations / departments |
+| **📋 Queue Management** | Waiting queues |
+| **👨‍⚕️ Doctor Management** | Doctors |
+| **📅 Appointments** | Appointments |
 
-1. Go to **Patients** → **Search**
-2. Enter search criteria:
-   - Patient ID
-   - Name (partial match)
-   - Phone number
-   - Email
-3. Click **Search**
-4. Results display in a table
+Below the buttons:
 
-#### Viewing Patient Profile
-
-1. Find the patient using search
-2. Double-click the patient or click **View**
-3. View complete patient information:
-   - Personal details
-   - Contact information
-   - Medical history
-   - Visit history
-   - Queue history
-   - Appointment history
-
-#### Editing Patient Information
-
-1. Open patient profile
-2. Click **Edit**
-3. Modify information
-4. Click **Save**
-
-#### Deleting a Patient
-
-1. Select patient from list
-2. Click **Delete**
-3. Confirm deletion
-4. **Note**: This action may be restricted based on user role
-
-### Queue Management
-
-#### Adding a Patient to Queue
-
-1. Navigate to **Queue** → **Add to Queue**
-2. Select **Specialization**
-3. Select **Patient**
-4. System automatically assigns priority based on patient status
-5. Click **Add to Queue**
-
-#### Viewing Queue Status
-
-1. Go to **Queue** → **View Queues**
-2. Select specialization
-3. View queue list:
-   - Patient name
-   - Status (Normal/Urgent/Super-Urgent)
-   - Position in queue
-   - Estimated wait time
-
-#### Processing Next Patient
-
-1. Select specialization
-2. Click **Next Patient**
-3. System displays the highest priority patient
-4. Patient is removed from queue
-5. Record is saved to history
-
-#### Removing a Patient from Queue
-
-1. Find patient in queue
-2. Click **Remove**
-3. Enter removal reason (optional)
-4. Confirm removal
-
-### Doctor Management
-
-#### Registering a Doctor
-
-1. Navigate to **Doctors** → **New Doctor**
-2. Fill in information:
-   - Full Name (required)
-   - License Number (required, unique)
-   - Title/Qualifications
-   - Contact Information
-   - Medical Degree
-   - Years of Experience
-   - Certifications
-3. Click **Save**
-
-#### Assigning Doctor to Specialization
-
-1. Open doctor profile
-2. Go to **Specializations** tab
-3. Click **Assign Specialization**
-4. Select specialization
-5. Click **Save**
-
-### Appointment System
-
-#### Scheduling an Appointment
-
-1. Navigate to **Appointments** → **New Appointment**
-2. Select:
-   - Patient
-   - Doctor
-   - Specialization
-   - Date and Time
-   - Duration
-   - Appointment Type
-   - Reason
-3. Click **Schedule**
-
-#### Viewing Appointments
-
-1. Go to **Appointments** → **Calendar**
-2. Choose view:
-   - **Day View**: Appointments for a specific day
-   - **Week View**: Weekly calendar
-   - **Month View**: Monthly calendar
-3. Click on appointment to view details
-
-#### Managing Appointments
-
-- **Confirm**: Mark appointment as confirmed
-- **Cancel**: Cancel appointment with reason
-- **Reschedule**: Change date/time
-- **Complete**: Mark as completed
-- **No-Show**: Mark patient as no-show
-
-### Specialization Management
-
-#### Creating a Specialization
-
-1. Navigate to **Specializations** → **New Specialization**
-2. Enter:
-   - Name (required, unique)
-   - Description
-   - Maximum Capacity
-3. Click **Save**
-
-#### Managing Specialization Capacity
-
-1. Open specialization
-2. View current queue count
-3. Adjust maximum capacity if needed
-4. System prevents adding patients when at capacity
+| Element | Meaning |
+|---------|---------|
+| **System status** | Shows **Connected** when the database initialized successfully. |
+| **📈 Quick Stats** | Metrics: **Patients**, **Doctors**, **Appointments**, **Queue** (two columns of numbers). |
 
 ---
 
-## Common Tasks
+## 5. General pattern: lists + Select checkbox + actions
 
-### Daily Workflow
+On **Patient**, **Specialization**, **Doctor**, and **Appointment** pages:
 
-#### Morning Routine
-1. Login to system
-2. Check dashboard for updates
-3. Review today's appointments
-4. Check queue status
+1. **Statistics** and sometimes **search/filter** appear **at the top**.
+2. **Action buttons** (Add / Edit / Delete / etc.) are in a **row below** the search row.
+3. A horizontal rule (`---`) separates that from **forms** (Add/Edit/Delete) when they are open.
+4. The **table** is **below** the forms area.
 
-#### Adding a New Patient
-1. Register patient
-2. Add to appropriate queue
-3. Confirm patient information
+**Selecting a row**
 
-#### Processing Patients
-1. View queue for specialization
-2. Process next patient
-3. Update patient status if needed
-
-#### End of Day
-1. Review completed appointments
-2. Generate daily reports
-3. Backup data (if authorized)
-
-### Weekly Tasks
-
-- Review weekly statistics
-- Generate weekly reports
-- Update doctor schedules
-- Review queue analytics
+1. Scroll to the subheading **… List - Click the checkbox in a row to select it** (wording is similar on each module).
+2. In the table, tick **Select** on **one** row.
+3. A green success line appears: **Selected: … — Click Edit/Delete button above to proceed** (wording varies slightly).
+4. Click the desired action button **above** the table (e.g. **✏️ Edit Patient**).
 
 ---
 
-## Troubleshooting
+## 6. Dashboard — click-by-click
 
-### Common Issues
+**Open:** In the sidebar, click **📊 Dashboard**.
 
-#### Cannot Login
-- **Problem**: Login fails
-- **Solution**: 
-  - Verify username and password
-  - Check if account is active
-  - Contact administrator
+**Main area (top to bottom):**
 
-#### Patient Not Found
-- **Problem**: Search returns no results
-- **Solution**:
-  - Check spelling
-  - Try partial name search
-  - Verify patient exists
+1. **Title:** **📊 Dashboard**
+2. **📈 Reports & Analytics Summary** — five metrics in one row: **Total Patients**, **Total Doctors**, **Active Queue**, **Total Appointments**, **Upcoming**.
+3. **📋 Select Report Types (Select multiple to view all at once)** — **multiselect** dropdown. Click to add/remove report types. Options: **Patient Statistics**, **Queue Analytics**, **Appointment Reports**, **Doctor Performance**, **Specialization Utilization**, **Custom Report**. Default selection in code: **Patient Statistics** and **Appointment Reports**.
+4. **Date range (two columns):**
+   - **📅 Start Date** — date picker  
+   - **📅 End Date** — date picker  
+5. Below that, **each selected report type** renders its own blocks (metrics, subheadings, **bar charts**). Scroll to see all.
+6. **Custom Report** only: after selecting **Custom Report** in the multiselect, scroll to **🔧 Custom Report Builder**:
+   - **📊 Select Metrics** — multiselect: **Patient Statistics**, **Queue Statistics**, **Appointment Statistics**, **Doctor Statistics**, **Specialization Statistics**
+   - Click **🔍 Generate Custom Report** (primary button) to build the combined view below.
 
-#### Queue Full
-- **Problem**: Cannot add patient to queue
-- **Solution**:
-  - Queue has reached maximum capacity
-  - Process existing patients first
-  - Contact administrator to increase capacity
-
-#### Database Error
-- **Problem**: Database connection error
-- **Solution**:
-  - Verify database file exists
-  - Check file permissions
-  - Restore from backup if needed
-  - Contact technical support
-
-#### Application Crashes
-- **Problem**: Application closes unexpectedly
-- **Solution**:
-  - Save work frequently
-  - Check error logs
-  - Restart application
-  - Report issue to support
-
-### Getting Help
-
-1. **Check FAQ**: See [FAQ.md](FAQ.md)
-2. **Review Documentation**: Check relevant sections
-3. **Contact Support**: Reach out to system administrator
-4. **Report Bugs**: Use bug reporting system
+**No separate Save** — changing dates or report selections updates what is shown on the next rerun.
 
 ---
 
-## Keyboard Shortcuts
+## 7. Patient Management — navigation and controls
 
-### General
-- **Ctrl+N**: New record
-- **Ctrl+S**: Save
-- **Ctrl+F**: Search
-- **Ctrl+Q**: Quit application
-- **F1**: Help
+**Open:** Sidebar → **👥 Patient Management**.
 
-### Navigation
-- **Tab**: Next field
-- **Shift+Tab**: Previous field
-- **Enter**: Submit/Save
-- **Esc**: Cancel/Close
+### 7.1 Top of page (top to bottom)
 
-### Patient Management
-- **Ctrl+P**: New Patient
-- **Ctrl+Shift+F**: Search Patients
+1. **Title:** **👥 Patient Management**
+2. **📊 Patient Statistics** — metrics: **Total Patients**, **Normal**, **Urgent**, **Super-Urgent**
+3. **Row 1 (columns):**
+   - **🔍 Search Patients** — text field; placeholder text: `Search by name, phone, or email...`
+   - **Filter by Status** — dropdown: **All**, **Normal**, **Urgent**, **Super-Urgent**
+   - **🔄 Refresh** — button (reloads)
+4. **Row 2 (three buttons):**
+   - **➕ Add New Patient** (primary)
+   - **✏️ Edit Patient**
+   - **🗑️ Delete Patient**
+5. If you opened Add/Edit/Delete, the corresponding **form block** appears **next** (see below).
+6. **📋 Patient List - Click the checkbox in a row to select it** — table with columns **Select**, **ID**, **Name**, **Age**, **Gender**, **Status**, **Phone**, **Email**
 
-### Queue Management
-- **Ctrl+Q**: View Queues
-- **Ctrl+N**: Next Patient
+### 7.2 Add a new patient (procedure)
+
+1. Click **➕ Add New Patient**.
+2. Find the **➕ Add New Patient** subheading and the form below it.
+3. Fill inputs:
+
+   **Left column**
+
+   - **Full Name** (required; the label in the app ends with an asterisk) — text  
+   - **Date of Birth** (required) — date picker (cannot be after today)  
+   - **Gender** — dropdown: empty, **Male**, **Female**, **Other**  
+   - **Phone Number** — text  
+
+   **Right column**
+
+   - **Email** — text  
+   - **Address** — multiline  
+   - **Status** — dropdown: **Normal**, **Urgent**, **Super-Urgent** (triage / priority in this app)
+
+4. Click **💾 Save Patient** to submit, or **❌ Cancel** to close without saving.
+5. If required fields are empty, the form shows **Full Name and Date of Birth are required!**
+
+### 7.3 Edit a patient (procedure)
+
+**Option A — from table**
+
+1. In **Patient List**, check **Select** on one row.
+2. Click **✏️ Edit Patient** above the table.
+3. You should see **📝 Editing Patient ID: …** and the form **Edit Patient** with fields pre-filled: **Full Name**, **Date of Birth**, **Gender**, **Phone Number**, **Email**, **Address**, **Status** (required fields match the add form).
+4. Click **💾 Update Patient** or **❌ Cancel**.
+
+**Option B — by ID**
+
+1. Click **✏️ Edit Patient** without selecting a row.
+2. Use **Enter Patient ID to Edit (or select a row from the table above)** — number stepper (minimum 1).
+3. Click **Load Patient**.
+4. After **Patient loaded!**, use the same form as Option A.
+
+### 7.4 Delete a patient (procedure)
+
+1. Select a row in **Patient List** (or open delete and use ID path similar to edit).
+2. Click **🗑️ Delete Patient**.
+3. On **🗑️ Delete Patient**, read the warning and patient summary.
+4. Click **✅ Confirm Delete** or **❌ Cancel**.
 
 ---
 
-## Glossary
+## 8. Specialization Management — navigation and controls
 
-### Terms
+**Open:** Sidebar → **🏥 Specialization Management**.
 
-- **Patient**: Individual receiving medical care
-- **Queue**: Ordered list of patients waiting for service
-- **Specialization**: Medical field (e.g., Cardiology, Pediatrics)
-- **Status**: Patient priority level (Normal, Urgent, Super-Urgent)
-- **Appointment**: Scheduled medical consultation
-- **Capacity**: Maximum number of patients in a queue
-- **Dashboard**: Main overview screen
-- **Profile**: Complete information about a patient or doctor
+### 8.1 Top of page (top to bottom)
 
-### Status Levels
+1. **Title:** **🏥 Specialization Management**
+2. **📊 Specialization Statistics** — **Total Specializations**, **Active**, **Inactive**, **Total Capacity**
+3. **Row 1:** **🔍 Search Specializations** (placeholder *Search by name or description...*) | **🔄 Refresh**
+4. **Row 2 (four controls):**
+   - **➕ Add New Specialization** (primary)
+   - **✏️ Edit Specialization**
+   - **🗑️ Delete Specialization**
+   - **Filter** — dropdown: **All**, **Active Only**, **Inactive Only**
+5. Add/Edit/Delete blocks when open.
+6. **📋 Specialization List - Click the checkbox in a row to select it** — table: **Select**, **ID**, **Name**, **Max Capacity**, **Current Queue**, **Utilization**, **Doctors**, **Status**
 
-- **Normal (0)**: Standard priority patient
-- **Urgent (1)**: Requires priority attention
-- **Super-Urgent (2)**: Highest priority, immediate attention needed
+### 8.2 Add specialization (procedure)
 
-### User Roles
+1. Click **➕ Add New Specialization**.
+2. Under **➕ Add New Specialization**:
+   - **Specialization Name** (required) — text  
+   - **Description** — multiline  
+   - **Maximum Queue Capacity** (required) — number (1–1000, default 10)  
+   - **Active** — checkbox (default on)  
+3. **💾 Save Specialization** or **❌ Cancel**.
 
-- **Administrator**: Full system access
-- **Doctor**: Access to patient records and appointments
-- **Receptionist**: Patient and queue management
-- **Nurse**: Patient care and queue management
-- **Viewer**: Read-only access
+### 8.3 Edit specialization (procedure)
+
+1. Select one row in the list, then **✏️ Edit Specialization**, **or** enter ID and **Load Specialization**.
+2. Form fields: **Specialization Name**, **Description**, **Maximum Queue Capacity**, **Active** (required fields show an asterisk in the app).
+3. **💾 Update Specialization** or **❌ Cancel**.
+
+### 8.4 Delete specialization (procedure)
+
+1. Select a row, then **🗑️ Delete Specialization**.
+2. Read **Are you sure…** and **✅ Yes, Delete** / **❌ Cancel**.  
+   Success message may say the item was **deactivated** depending on backend rules.
 
 ---
 
-## Conclusion
+## 9. Queue Management — navigation and controls
 
-This user manual provides comprehensive guidance for using the Hospital Management System. For additional help:
+**Open:** Sidebar → **📋 Queue Management**.
 
-- Review the [Feature Walkthrough](FEATURE_WALKTHROUGH.md)
-- Check the [FAQ](FAQ.md)
-- Contact system administrator
+### 9.1 Top of page (top to bottom)
 
-**Last Updated**: January 30, 2026  
-**Version**: 1.0
+1. **Title:** **📋 Queue Management**
+2. **📊 Queue Statistics** — **Total Active**, **Normal**, **Urgent**, **Super-Urgent**, **Avg Wait Time**
+3. **🏥 Select Specialization** — dropdown:
+   - First option: **📋 All Specializations** (combined view)
+   - Then each active department, e.g. **Cardiology (ID: 1)**
+4. **Row of four buttons:**
+   - **➕ Add to Queue** (primary) — **requires a specific specialization** (not “All”); otherwise a **⚠️ Please select a specific specialization…** warning appears
+   - **✅ Serve Next Patient** — also **requires a specific specialization**
+   - **🔄 Refresh Queue**
+   - **📊 View Analytics** — for **one** specialization; if **All** is selected, you may see a message to pick a specific department first
+
+### 9.2 Add to queue (procedure)
+
+1. In **🏥 Select Specialization**, choose a **named** department (not **All**).
+2. Click **➕ Add to Queue**.
+3. Under **➕ Add Patient to Queue**:
+   - Banner **Adding to: …** shows the department  
+   - **👤 Select Patient** — dropdown of all patients  
+   - **⚡ Priority Level** — **Normal (0)**, **Urgent (1)**, **Super-Urgent (2)**  
+   - Metrics: **Current Queue Size** (e.g. `3/10`), **Capacity Usage** (%)  
+4. **✅ Add to Queue** or **❌ Cancel**.  
+   If full, you see **⚠️ Queue is at maximum capacity!** and add may fail with an error message.
+
+### 9.3 Serve next (procedure)
+
+1. Select a **specific** specialization.
+2. Click **✅ Serve Next Patient**.  
+   Success: **✅ Patient … has been served!** Empty queue: **📭 Queue is empty. No patients to serve.**
+
+### 9.4 View analytics (procedure)
+
+1. Select a **specific** specialization.
+2. Click **📊 View Analytics**.
+3. **📊 Queue Analytics** shows metrics and wait times.
+4. Click **Close Analytics** to leave.
+
+### 9.5 Queue table — row actions (procedure)
+
+1. With **All Specializations** or one department selected, scroll to **📋 All Queues** or **📋 Current Queue**.
+2. Tick **Select** on **one** row.
+3. Three buttons appear **below** the selection area:
+   - **⚡ Change Priority** → **⚡ Change Patient Priority**: **New Priority Level** dropdown, then **✅ Update Priority** or **❌ Cancel**
+   - **✅ Serve Patient** — immediate serve for that entry  
+   - **🗑️ Remove from Queue** → **🗑️ Remove Patient from Queue**: optional **Removal Reason (optional)**, then **✅ Yes, Remove** or **❌ Cancel**
+
+---
+
+## 10. Doctor Management — navigation and controls
+
+**Open:** Sidebar → **👨‍⚕️ Doctor Management**.
+
+### 10.1 Top of page (top to bottom)
+
+1. **Title:** **👨‍⚕️ Doctor Management**
+2. **📊 Doctor Statistics** — **Total Doctors**, **Active**, **Inactive**, **On Leave**
+3. **🔍 Search Doctors** | **Filter by Status** (**All**, **Active**, **Inactive**, **On Leave**) | **🔄 Refresh**
+4. **➕ Add New Doctor** | **✏️ Edit Doctor** | **🗑️ Delete Doctor**
+5. Forms when open.
+6. **📋 Doctor List - Click the checkbox in a row to select it** — **Select**, **ID**, **Name**, **License**, **Status**, **Phone**, **Email**, **Experience**
+
+### 10.2 Add doctor (procedure)
+
+1. Click **➕ Add New Doctor**.
+2. **Left column:** **Full Name** (required), **Title (e.g., Dr., Prof.)**, **License Number** (required), **Phone Number**, **Email**, **Office Address**  
+3. **Right column:** **Medical Degree**, **Years of Experience** (0–100), **Certifications**, **Status** (**Active**, **Inactive**, **On Leave**), **Hire Date**, **Bio/Description**  
+4. **Specializations** heading → **Select Specializations** — multiselect (only **active** specializations listed)  
+5. **✅ Add Doctor** or **❌ Cancel**
+
+### 10.3 Edit / Delete doctor
+
+Same selection pattern as patients: select row → **✏️ Edit Doctor** or **🗑️ Delete Doctor**, or load by ID where offered.
+
+- Edit form mirrors add fields; use **✅** submit / **❌ Cancel** as shown on screen.  
+- Delete: confirmation notes **soft delete** → **Inactive**; **✅ Yes, Delete** / **❌ Cancel**.
+
+---
+
+## 11. Appointment Management — navigation and controls
+
+**Open:** Sidebar → **📅 Appointments**.
+
+### 11.1 Top of page (top to bottom)
+
+1. **Title:** **📅 Appointment Management**
+2. **📊 Appointment Statistics** — **Total**, **Scheduled**, **Confirmed**, **Upcoming**, **Today**, **Completed**, then **Cancelled**, **No-Show**
+3. **🔍 Search Appointments** | **Filter by Status** | **Filter by Date** | **🔄 Refresh**  
+   - **Filter by Status:** **All**, **Scheduled**, **Confirmed**, **Cancelled**, **Completed**, **No-Show**  
+   - **Filter by Date:** **All**, **Today**, **Upcoming**, **Past**
+4. **➕ Schedule New Appointment** | **✏️ Edit Appointment** | **✅ Mark Complete** | **❌ Cancel Appointment**
+5. Forms when open.
+6. **📋 Appointment List - Click the checkbox in a row to select it** — **Select**, **ID**, **Date**, **Time**, **Patient**, **Doctor**, **Specialization**, **Type**, **Status**, **Duration**
+
+### 11.2 Schedule new appointment (procedure)
+
+1. Click **➕ Schedule New Appointment**.
+2. Under **➕ Schedule New Appointment**, fill the form:
+   - **👤 Patient** (required) — dropdown  
+   - **👨‍⚕️ Doctor** (required) — dropdown (active doctors)  
+   - **🏥 Specialization** (required) — dropdown (active specializations)  
+   - **📅 Appointment Date** (required) — not before today  
+   - **🕐 Appointment Time** (required) — time picker  
+   - **⏱️ Duration (minutes)** (required) — 15–240, step 15  
+   - **📋 Appointment Type** (required) — **Regular**, **Follow-up**, **Emergency**  
+   - **📝 Reason for Visit**, **📄 Additional Notes**  
+   - **📊 Status** — **Scheduled** or **Confirmed**
+3. Click **✅ Schedule Appointment** or **❌ Cancel**.
+4. Overlap error example: **❌ Time slot conflicts with existing appointment(s). Please choose a different time.**
+
+If dropdowns are empty, the form shows messages such as **No active patients**, **No active doctors**, or **No active specializations** (see §12).
+
+### 11.3 Edit appointment (procedure)
+
+1. Select **one** row in **Appointment List**.
+2. Click **✏️ Edit Appointment**.
+3. Same fields as schedule, plus **📊 Status** may include **Cancelled**, **Completed**, **No-Show**.
+4. **✅ Update Appointment** or **❌ Cancel**.
+
+### 11.4 Mark complete / Cancel (procedure)
+
+1. Select one appointment row.
+2. **✅ Mark Complete** → **✅ Mark Appointment as Complete** — optional **📝 Completion Notes (Optional)** → **✅ Mark as Complete** or **❌ Cancel**. If already completed, a warning and **❌ Close** appear.
+3. **❌ Cancel Appointment** → **📝 Cancellation Reason** → **✅ Confirm Cancellation** or **❌ Cancel**.
+
+---
+
+## 12. Patient dropdown on appointments (important)
+
+The **Schedule** and **Edit** appointment forms only list patients where the code filters **`patient.status == 1`**. In this project, **Patient.status** is **triage**: **0 = Normal**, **1 = Urgent**, **2 = Super-Urgent**.
+
+So the **Patient** dropdown (required field) effectively shows **Urgent** patients only. To make a patient appear there, set **Status** to **Urgent** on **Patient Management**, or change the code to use all patients.
+
+---
+
+## 13. Quick troubleshooting
+
+| Issue | Check |
+|--------|--------|
+| Cannot connect | MySQL/XAMPP, database name, `src/config.py` |
+| Add to queue blocked | Capacity; duplicate patient in same department queue |
+| No patients in appointment form | §12 — try **Urgent** status |
+| Wrong row targeted | Exactly **one** **Select** checkbox ticked before Edit/Delete |
+
+---
+
+## 14. Reference paths
+
+| Item | Location |
+|------|----------|
+| App entry | `app.py` |
+| Configuration | `src/config.py` |
+| Services | `src/services/` |
+
+For service behavior details, see **API_DOCUMENTATION.md** in the same folder.
