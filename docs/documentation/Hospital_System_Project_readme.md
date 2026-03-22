@@ -1,34 +1,36 @@
-# Hospital Patient Queue Management System
+# Intelligent Hospital Management and Queueing System (HMS)
 
-The Hospital Patient Queue Management System is a Python-based command-line application designed to manage patient queues in a hospital. It utilizes object-oriented programming (OOP) principles and includes three main classes: `Patient`, `Specialization`, and `OperationsManager`. This project provides a simple yet effective way to handle patient data and queue management within a hospital setting.
+**Beta.ver.1.1 — LATEST**
 
-The Hospital Patient Queue Management System is an illustration of OOP concepts in Python. It consists of three primary classes, each serving a specific purpose:
+The **Intelligent Hospital Management and Queueing System** is a **browser-based operational dashboard** built with **Python** and **Streamlit**. It is **not** a command-line tool and **not** a PyQt6 desktop application. Staff use a web browser to manage patients, departments (specializations), queues, doctors, appointments, and **Reports & Analytics** on the **Dashboard**.
 
-### Patient
+The system follows a **Layered Service-Oriented Architecture (SOA)**:
 
-The `Patient` class represents an individual patient and includes the following attributes:
+- **Presentation:** Streamlit (`app.py`) — reactive UI, interaction-driven reruns, sidebar navigation, forms, tables, and native charts (e.g. `st.bar_chart`) with **Pandas** for reporting.
+- **Service layer:** Domain logic in `src/services/` — one primary service per area, constructed with a **shared `DatabaseManager`** injected from `app.py` (**dependency injection**).
+- **Persistence:** **MySQL** (e.g. XAMPP) or **SQLite**, selected by **`USE_MYSQL`** in `src/config.py` (**strategy-like** resolution in `src/database/__init__.py`); services stay database-agnostic.
 
-- `name`: The name of the patient.
-- `status`: The patient's status, which can be 0 (normal), 1 (urgent), or 2 (super-urgent).
+## Core components (architectural roles)
 
-This class provides methods for string representation and status formatting for patients.
+### Domain models (`src/models/`)
 
-### Specialization
+Entity classes (e.g. **`Patient`**, **`Doctor`**, **`Specialization`**, **`Appointment`**, **`QueueEntry`**) hold typed attributes and helpers such as **`to_dict()`**. They map to relational tables and are filled by the service layer; they do **not** own business workflows end-to-end.
 
-The `Specialization` class manages patient queues within different specializations. It offers functionalities such as:
+### Service classes (`src/services/`)
 
-- Adding patients with various urgency levels.
-- Retrieving the next patient from the queue.
-- Removing patients by name.
-- Checking queue capacity.
+Services implement **application use cases** and orchestrate validation, rules, and SQL via the injected manager, for example:
 
-### OperationsManager
+- **`PatientService`** — registration, search, updates, triage-style status (Normal / Urgent / Super-Urgent).
+- **`SpecializationService`** — departments, capacity, active/inactive lifecycle.
+- **`QueueService`** — enqueue, ordering (**priority first**, **FIFO** by `joined_at`), capacity, serve/remove.
+- **`DoctorService`** — doctor profiles, specialization assignments, employment status.
+- **`AppointmentService`** — scheduling, updates, completion/cancellation, **overlap conflict detection** for the same doctor.
+- **`ReportService`** — aggregates for the Dashboard (metrics and chart-ready series).
 
-The `OperationsManager` class serves as the user interface for interacting with the `Specialization` instances. Users can perform actions like:
+### Presentation entry (`app.py`)
 
-- Adding new patients to specializations.
-- Listing patients in specializations.
-- Retrieving the next patient.
-- Removing patients.
-- Ending the program gracefully.
+Binds Streamlit widgets to the services above; keeps the UI thin so rules remain testable and reusable.
 
+---
+
+For install and usage, see **[USER_MANUAL.md](USER_MANUAL.md)**, **[HOW_TO_RUN.md](HOW_TO_RUN.md)**, and **[RUN_STREAMLIT.md](RUN_STREAMLIT.md)**.

@@ -1,4 +1,6 @@
-# Hospital Management System - Setup and Installation Guide
+# Hospital Management System — Setup and Installation Guide
+
+**Beta.ver.1.1 — LATEST** — **Streamlit** web application (`app.py`)
 
 ## Table of Contents
 
@@ -13,410 +15,177 @@
 
 ## Prerequisites
 
-### Required Software
+### Required software
 
-#### 1. Python 3.8 or Higher
+#### 1. Python 3.9+ (recommended)
 - **Download**: https://www.python.org/downloads/
-- **Verify Installation**:
+- **Verify**:
   ```bash
   python --version
-  # Should show Python 3.8.x or higher
   ```
 
-#### 2. pip (Python Package Manager)
-- Usually included with Python
-- **Verify Installation**:
-  ```bash
-  pip --version
-  ```
+#### 2. pip
+- **Verify**: `pip --version`
 
-#### 3. Git (Optional, for version control)
-- **Download**: https://git-scm.com/downloads
+#### 3. Web browser
+- Chrome, Edge, Firefox, or equivalent (for `http://localhost:8501`)
 
-### System Requirements
+#### 4. MySQL (optional but common)
+- **XAMPP** with MySQL running if `USE_MYSQL = True` in `src/config.py`
 
-- **Operating System**: Windows 10/11, macOS 10.14+, or Linux
-- **RAM**: 4GB minimum (8GB recommended)
-- **Storage**: 500MB free space
-- **Display**: 1280x720 minimum resolution
+### System requirements
+
+- **OS**: Windows 10/11, macOS 10.14+, or Linux  
+- **RAM**: 4GB minimum (8GB recommended)  
+- **Storage**: 500MB+ free  
+- **Display**: 1280×720 minimum  
 
 ---
 
-## Installation Steps
+## Installation steps
 
-### Step 1: Download Project Files
+### Step 1: Obtain the project
 
-1. Download or clone the project repository
-2. Extract to your desired location
-3. Note the project directory path
+Clone or extract the repository and note the **project root** (folder containing `app.py`).
 
-### Step 2: Navigate to Project Directory
+### Step 2: Open a terminal in the project root
 
 ```bash
-cd path/to/Hospital-System
+cd path/to/hospital-system
 ```
 
-### Step 3: Create Virtual Environment (Recommended)
+### Step 3: Virtual environment (recommended)
 
-#### Windows
+**Windows**
 ```bash
 python -m venv venv
 venv\Scripts\activate
 ```
 
-#### macOS/Linux
+**macOS / Linux**
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-### Step 4: Install Dependencies
+### Step 4: Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Expected Output:**
-```
-Collecting PyQt6>=6.5.0
-Collecting pytest>=7.4.0
-...
-Successfully installed PyQt6-6.5.0 pytest-7.4.0 ...
-```
+**Expected packages include** (non-exhaustive): `streamlit`, `pandas`, `mysql-connector-python` (for MySQL), `pytest`, `python-dateutil`. There is **no PyQt6** requirement.
 
-### Step 5: Initialize Database
+### Step 5: Configure database
 
-```bash
-python src/database/init_db.py
-```
+Edit **`src/config.py`**:
 
-**Expected Output:**
-```
-Initializing database...
-Database schema created successfully
-✅ Database initialized successfully!
-```
+- **`USE_MYSQL = True`** — set `MYSQL_CONFIG` (host, user, password, database `hospital_system`, etc.) for XAMPP/MySQL.  
+- **`USE_MYSQL = False`** — SQLite file path in `SQLITE_CONFIG['db_path']`.
 
-### Step 6: (Optional) Add Sample Data
+### Step 6: Initialize database
+
+Run the project’s database initialization scripts as documented for your environment (e.g. `python src/database/init_db.py` for SQLite, or MySQL schema/seed scripts if applicable). Ensure the `data/` directory exists for SQLite if used.
+
+### Step 7: Run the application
+
+From the **project root**:
 
 ```bash
-python src/database/add_sample_data.py
+python -m streamlit run app.py
 ```
 
-This adds sample data for testing purposes.
+**Windows (batch launcher):**
 
-### Step 7: Run the Application
-
-```bash
-python src/main.py
+```text
+run_streamlit.bat
 ```
+
+The app opens in the browser (default **`http://localhost:8501`**). If the `streamlit` command is not on `PATH`, always use **`python -m streamlit`**.
 
 ---
 
 ## Configuration
 
-### Database Configuration
-
-#### Default Database Location
-- **Path**: `data/hospital_system.db`
-- **Backup Location**: `data/backups/`
-
-#### Custom Database Path
-
-Edit `src/main.py` or configuration file:
-
-```python
-from src.database import DatabaseManager
-
-db = DatabaseManager(db_path='custom/path/database.db')
-```
-
-### Application Configuration
-
-#### Settings File (if implemented)
-Location: `config/settings.ini` or `config/settings.json`
-
-Example configuration:
-```ini
-[database]
-path = data/hospital_system.db
-backup_enabled = true
-backup_interval = 24
-
-[ui]
-theme = default
-language = en
-```
+- **Database**: `src/config.py` — `USE_MYSQL`, `MYSQL_CONFIG`, `SQLITE_CONFIG`  
+- **No separate PyQt / desktop theme config** — UI is Streamlit defaults plus `app.py` styling.
 
 ---
 
 ## Verification
 
-### Verify Installation
-
-#### 1. Check Python Version
-```bash
-python --version
-# Should be 3.8 or higher
-```
-
-#### 2. Check Dependencies
-```bash
-pip list
-# Should show PyQt6, pytest, etc.
-```
-
-#### 3. Test Database
-```bash
-python tests/test_database.py
-```
-
-**Expected Output:**
-```
-[PASS] - Table Creation
-[PASS] - Basic Operations
-[PASS] - Foreign Keys
-[PASS] - Backup/Restore
-
-Total: 4/4 tests passed
-```
-
-#### 4. View Database
-```bash
-python src/database/view_db.py --summary
-```
-
-**Expected Output:**
-```
-DATABASE SUMMARY
-Table Name                     Row Count       Status
-patients                       0               OK
-doctors                        0               OK
-...
-```
-
-#### 5. Run Application
-```bash
-python src/main.py
-```
-
-Application window should open without errors.
+1. **`python --version`** — 3.9+ recommended  
+2. **`pip list`** — includes `streamlit`, `pandas`  
+3. **`pytest`** or `python tests/test_database.py` — as applicable  
+4. **Run Streamlit** — sidebar shows **Dashboard**, **Patient**, **Specialization**, **Queue**, **Doctor**, **Appointments**; database status **Connected** when configuration is correct  
 
 ---
 
 ## Troubleshooting
 
-### Common Issues
+### `ModuleNotFoundError: No module named 'streamlit'`
 
-#### Issue: Python Not Found
-
-**Error**: `'python' is not recognized as an internal or external command`
-
-**Solution**:
-1. Add Python to PATH during installation
-2. Or use `python3` instead of `python`
-3. Or use full path: `C:\Python39\python.exe`
-
-#### Issue: pip Not Found
-
-**Error**: `'pip' is not recognized`
-
-**Solution**:
 ```bash
-python -m ensurepip --upgrade
-python -m pip install --upgrade pip
-```
-
-#### Issue: ModuleNotFoundError
-
-**Error**: `ModuleNotFoundError: No module named 'PyQt6'`
-
-**Solution**:
-```bash
-pip install PyQt6
-# Or reinstall all dependencies
 pip install -r requirements.txt
 ```
 
-#### Issue: Database Error
+### Database connection error
 
-**Error**: `Database not found` or `Database error`
+- **MySQL:** XAMPP MySQL running, database created, credentials in `src/config.py`  
+- **SQLite:** path writable, `data/` exists  
 
-**Solution**:
-1. Verify database file exists: `data/hospital_system.db`
-2. Reinitialize database:
-   ```bash
-   python src/database/init_db.py
-   ```
-3. Check file permissions
-4. Verify directory exists: `data/`
+### Port 8501 in use
 
-#### Issue: Permission Denied
+```bash
+python -m streamlit run app.py --server.port 8502
+```
 
-**Error**: `Permission denied` when creating database
+### Import errors
 
-**Solution**:
-1. Run with appropriate permissions
-2. Check directory write permissions
-3. Create `data/` directory manually if needed
-
-#### Issue: Import Errors
-
-**Error**: `ImportError: cannot import name 'DatabaseManager'`
-
-**Solution**:
-1. Verify project structure is correct
-2. Check you're in the project root directory
-3. Verify `src/` directory exists
-4. Check `__init__.py` files exist
+Run commands from **project root**; `app.py` adds `src` to `sys.path`.
 
 ---
 
-## Development Setup
+## Development setup
 
-### For Developers
-
-#### 1. Clone Repository
 ```bash
-git clone <repository-url>
-cd Hospital-System
-```
-
-#### 2. Set Up Development Environment
-```bash
-# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-
-# Install dependencies
+# activate venv
 pip install -r requirements.txt
-
-# Install development dependencies (if any)
-pip install black flake8 pytest-qt
-```
-
-#### 3. Set Up IDE
-
-**VS Code**:
-1. Install Python extension
-2. Install Pylance extension
-3. Configure Python interpreter to use venv
-
-**PyCharm**:
-1. Open project
-2. Configure Python interpreter
-3. Set up run configurations
-
-#### 4. Run Tests
-```bash
-# Run all tests
 pytest
-
-# Run specific test file
-pytest tests/test_database.py
-
-# Run with coverage
-pytest --cov=src tests/
 ```
 
-#### 5. Code Quality
+Optional quality tools (`black`, `flake8`) — comment in `requirements.txt`; **pytest-qt is not used** for Streamlit.
 
-**Format Code**:
-```bash
-black src/
-```
-
-**Lint Code**:
-```bash
-flake8 src/
-```
-
-### Project Structure
+### Project structure (high level)
 
 ```
-Hospital-System/
+hospital-system/
+├── app.py                 # Streamlit entry
+├── run_streamlit.bat
 ├── src/
-│   ├── database/        # Database layer
-│   ├── models/          # Data models
-│   ├── services/        # Business logic
-│   ├── ui/              # User interface
-│   └── utils/           # Utilities
-├── tests/               # Test files
-├── docs/
-│   ├── documentation/   # User & developer docs, guides, standards
-│   └── implementation/  # Implementation plans, summaries, roadmaps
-├── data/                # Database files
-├── requirements.txt     # Dependencies
-└── README.md           # Project readme
+│   ├── config.py
+│   ├── database/
+│   ├── models/
+│   └── services/
+├── tests/
+├── docs/documentation/
+├── data/                  # SQLite file (if used)
+└── requirements.txt
 ```
 
 ---
 
-## Post-Installation
+## Additional resources
 
-### First Run Checklist
-
-- [ ] Application launches successfully
-- [ ] Database is initialized
-- [ ] Can view database summary
-- [ ] Sample data loaded (if used)
-- [ ] No error messages in console
-
-### Initial Configuration
-
-1. **Create Admin User** (if authentication implemented)
-2. **Set Up Specializations**
-3. **Add Doctors**
-4. **Configure Settings**
-
-### Backup Setup
-
-1. **Enable Automatic Backups** (if implemented)
-2. **Set Backup Schedule**
-3. **Test Backup/Restore**
+- [USER_MANUAL.md](USER_MANUAL.md)  
+- [HOW_TO_RUN.md](HOW_TO_RUN.md)  
+- [RUN_STREAMLIT.md](RUN_STREAMLIT.md)  
+- [ARCHITECTURE.md](ARCHITECTURE.md)  
+- [API_DOCUMENTATION.md](API_DOCUMENTATION.md)  
+- [FAQ.md](FAQ.md)  
 
 ---
 
-## Uninstallation
-
-### Remove Application
-
-1. **Stop Application**: Close all running instances
-2. **Backup Data**: Copy `data/` directory if needed
-3. **Delete Project Directory**: Remove entire project folder
-4. **Remove Virtual Environment**: Delete `venv/` directory
-5. **Optional**: Uninstall Python packages
-   ```bash
-   pip uninstall PyQt6 pytest python-dateutil
-   ```
-
-### Keep Data
-
-If you want to keep data but remove application:
-1. Backup `data/hospital_system.db`
-2. Delete project files
-3. Restore database when reinstalling
-
----
-
-## Additional Resources
-
-- [User Manual](USER_MANUAL.md) - How to use the system
-- [Architecture Documentation](ARCHITECTURE.md) - System design
-- [API Documentation](API_DOCUMENTATION.md) - Service layer APIs
-- [FAQ](FAQ.md) - Common questions
-
----
-
-## Support
-
-For installation issues:
-1. Check [Troubleshooting](#troubleshooting) section
-2. Review error messages
-3. Check system requirements
-4. Contact technical support
-
----
-
-**Last Updated**: January 30, 2026  
-**Version**: 1.0
+**Last Updated:** March 2026  
+**Version:** Beta.ver.1.1

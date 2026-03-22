@@ -1,98 +1,34 @@
-# Database Selection Decision
+# Database Selection — Beta.ver.1.1 (LATEST)
 
-## Decision: SQLite for Development and Production
+**Status:** Dual-engine support is **fully integrated** in the codebase.
 
-**Date**: January 28, 2026  
-**Status**: Approved
+## Decision
+
+The Hospital Management System uses a **configurable relational backend**:
+
+| Mode | When to use | Configuration |
+|------|-------------|----------------|
+| **SQLite** | Zero-install, file-based demos, offline-friendly | `USE_MYSQL = False` in `src/config.py`; path in `SQLITE_CONFIG` |
+| **MySQL** | XAMPP/lab or production-like setups | `USE_MYSQL = True` in `src/config.py`; credentials in `MYSQL_CONFIG` |
+
+**No application code rewrites are required to switch engines** for normal operation: `src/database/__init__.py` selects **`MySQLDatabaseManager`** or the SQLite **`DatabaseManager`** and exposes a single **`DatabaseManager`** symbol to **`src/services/`** (strategy-style composition root). Services are written against that shared interface.
 
 ## Rationale
 
-### Selected: SQLite 3
+- **SQLite:** Built into Python, single file, easy backup and classroom use.
+- **MySQL:** Familiar stack with **XAMPP**, closer to networked deployments, supports shared DB scenarios.
+- **Same service layer:** Dependency injection keeps queue rules, appointment conflict logic, and reporting independent of the concrete engine.
 
-**Why SQLite?**
-1. **Zero Configuration**: No server setup required, works out of the box
-2. **Built-in Python Support**: `sqlite3` module is part of Python standard library
-3. **Single File Database**: Easy to backup, share, and version control
-4. **Sufficient for Project Scope**: Handles all required features:
-   - Foreign key constraints
-   - Transactions
-   - Indexes
-   - Complex queries
-   - Data integrity
-5. **Perfect for Academic Project**: 
-   - Easy to demonstrate
-   - Simple deployment
-   - No external dependencies
-6. **Future-Proof**: Can migrate to PostgreSQL/MySQL later if needed
+## Schema and tooling
 
-### Alternative Considered: PostgreSQL
+- Schema and initialization follow project scripts under `src/database/` and related SQL assets (see repository layout).
+- Use **Navicat** or **phpMyAdmin** for MySQL; Navicat or file tools for SQLite as needed.
 
-**Why Not PostgreSQL?**
-- Requires separate database server installation
-- More complex setup and configuration
-- Overkill for single-user/small-scale academic project
-- Adds unnecessary complexity for development
+## Notes
 
-**When to Use PostgreSQL:**
-- Multi-user concurrent access (10+ simultaneous users)
-- Very large datasets (millions of records)
-- Production deployment with high traffic
-- Need advanced features (full-text search, complex analytics)
-
-## Database Specifications
-
-### File Location
-- **Development**: `data/hospital_system.db`
-- **Backups**: `data/backups/`
-
-### Features Used
-- ✅ Foreign Key Constraints
-- ✅ Transactions (ACID compliance)
-- ✅ Indexes for performance
-- ✅ Check Constraints
-- ✅ Unique Constraints
-- ✅ Timestamps (CURRENT_TIMESTAMP)
-
-### Migration Path
-If needed in the future, migration to PostgreSQL/MySQL is straightforward:
-- SQLAlchemy ORM can abstract database differences
-- Schema can be exported and adapted
-- Data can be migrated using SQL dump
-
-## Database Schema Overview
-
-### Core Tables
-1. **patients** - Patient information and profiles
-2. **doctors** - Doctor information and credentials
-3. **specializations** - Medical specializations
-4. **doctor_specializations** - Many-to-many relationship
-5. **queue_entries** - Queue management
-6. **appointments** - Appointment scheduling
-7. **users** - Authentication and authorization
-8. **audit_logs** - System activity tracking (optional)
-
-### Relationships
-- Patients → Queue Entries (One-to-Many)
-- Patients → Appointments (One-to-Many)
-- Doctors → Appointments (One-to-Many)
-- Doctors ↔ Specializations (Many-to-Many)
-- Specializations → Queue Entries (One-to-Many)
-
-## Implementation Notes
-
-- Use connection context managers for proper resource management
-- Enable foreign keys: `PRAGMA foreign_keys = ON;`
-- Use transactions for multi-step operations
-- Implement proper error handling and rollback
-- Create indexes on frequently queried columns
-
-## Backup Strategy
-
-- Manual backup functionality
-- Export to SQL file
-- Export to CSV/JSON for data portability
-- Regular backup reminders (optional)
+- Parameter placeholders in SQL use `%s` style compatible with both managers where applicable.
+- After changing `src/config.py`, **restart** the Streamlit app.
 
 ---
 
-**Decision Approved**: SQLite 3 for all development and production use.
+**Last updated:** March 2026 — aligned with Beta.ver.1.1 documentation.

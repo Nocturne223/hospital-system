@@ -280,7 +280,7 @@ def show_add_patient_dialog(service: PatientService):
             phone_number = st.text_input("Phone Number", placeholder="555-1234")
         
         with col2:
-            email = st.text_input("Email", placeholder="email@example.com")
+            email = st.text_input("Email", placeholder="name@gmail.com")
             address = st.text_area("Address", height=100)
             status = st.selectbox(
                 "Status",

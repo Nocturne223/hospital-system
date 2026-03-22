@@ -1,18 +1,18 @@
 # Using XAMPP and Navicat with Hospital Management System
 
+**Beta.ver.1.1 — LATEST:** MySQL and SQLite are **both fully integrated**. Switching engines is a **configuration change only** — set **`USE_MYSQL = True`** (and fill **`MYSQL_CONFIG`**) or **`USE_MYSQL = False`** (and **`SQLITE_CONFIG`**) in **`src/config.py`**, then restart **`python -m streamlit run app.py`**. No rewrites of `DatabaseManager` logic are required for normal use; `src/database/__init__.py` selects the concrete manager.
+
 ## Overview
 
-You have two options for using XAMPP and Navicat:
+1. **Option A: SQLite + Navicat**
+   - Set `USE_MYSQL = False` in `src/config.py`
+   - Point Navicat at the SQLite file (e.g. under `data/`)
+   - Zero database server install
 
-1. **Option A: Keep SQLite + Use Navicat** (Easiest - No code changes)
-   - Continue using SQLite database
-   - Use Navicat to view/manage SQLite database
-   - No code changes needed
-
-2. **Option B: Switch to MySQL (XAMPP) + Use Navicat** (More features)
-   - Use MySQL database from XAMPP
-   - Use Navicat to manage MySQL database
-   - Requires code changes to DatabaseManager
+2. **Option B: MySQL (XAMPP) + Navicat** (common for labs)
+   - Install/start **MySQL** in XAMPP; create database **`hospital_system`**
+   - Set **`USE_MYSQL = True`** and matching **`MYSQL_CONFIG`**
+   - Use Navicat as a MySQL client — **no application code changes** beyond config
 
 ---
 
@@ -101,79 +101,22 @@ You'll need to modify `src/database/db_manager.py` to use MySQL instead of SQLit
 
 ---
 
-## Code Changes for MySQL (Option B)
+## MySQL schema
 
-If you choose Option B, here's what needs to change:
-
-### 1. Install MySQL Connector
-Add to `requirements.txt`:
-```txt
-mysql-connector-python>=8.0.0
-# OR
-pymysql>=1.0.0
-```
-
-### 2. Update DatabaseManager
-
-Create a new file `src/database/mysql_db_manager.py`:
-
-```python
-import mysql.connector
-from contextlib import contextmanager
-from typing import Optional, List, Dict, Any
-import logging
-
-class MySQLDatabaseManager:
-    def __init__(self, 
-                 host='localhost',
-                 port=3306,
-                 user='root',
-                 password='',
-                 database='hospital_system'):
-        self.config = {
-            'host': host,
-            'port': port,
-            'user': user,
-            'password': password,
-            'database': database
-        }
-        self.init_database()
-    
-    @contextmanager
-    def get_connection(self):
-        conn = mysql.connector.connect(**self.config)
-        try:
-            yield conn
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
-    
-    # Similar methods to SQLite version...
-```
-
-### 3. Create MySQL Schema
-Convert `schema.sql` to MySQL format (minor syntax differences).
+Use the repository’s MySQL schema / init scripts (see `src/database/` and project root helpers). Minor SQL dialect differences from SQLite are already handled in the dual-manager design.
 
 ---
 
 ## Recommendation
 
-### For Academic Project: **Option A (SQLite + Navicat)**
-- ✅ Faster to set up
-- ✅ No additional services to run
-- ✅ Works perfectly for the project scope
-- ✅ Navicat can view/edit SQLite easily
-- ✅ Less complexity
+### For quick start: **Option A (SQLite + Navicat)**
+- ✅ No database server
+- ✅ Single file backup
 
-### For Production-Like Setup: **Option B (MySQL + Navicat)**
-- ✅ More realistic production environment
-- ✅ Better for demonstrating enterprise features
-- ✅ More powerful database features
-- ⚠️ Requires code changes
-- ⚠️ Need to keep XAMPP running
+### For XAMPP / lab parity: **Option B (MySQL + Navicat)**
+- ✅ Toggle **`USE_MYSQL = True`** in **`src/config.py`**
+- ✅ Keep XAMPP MySQL running while using the app
+- ✅ **No** custom rewrite of `DatabaseManager` required for switching
 
 ---
 

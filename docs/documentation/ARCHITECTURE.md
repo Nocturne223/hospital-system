@@ -1,523 +1,212 @@
-# Hospital Management System - Architecture Documentation
+# Hospital Management System — Architecture Documentation
+
+**Documentation:** Beta.ver.1.1 — LATEST  
+**Application:** Browser-based web UI (`app.py`, Streamlit)
 
 ## Table of Contents
 
 1. [System Overview](#system-overview)
-2. [Architecture Patterns](#architecture-patterns)
-3. [System Layers](#system-layers)
-4. [Design Patterns](#design-patterns)
-5. [Database Design](#database-design)
-6. [Class Structure](#class-structure)
-7. [Component Interactions](#component-interactions)
+2. [Layered Service-Oriented Architecture](#layered-service-oriented-architecture)
+3. [Presentation Layer (Streamlit)](#presentation-layer-streamlit)
+4. [Service and Data Access Layers](#service-and-data-access-layers)
+5. [Queue Ordering and Appointment Conflicts](#queue-ordering-and-appointment-conflicts)
+6. [Design Patterns (SOLID, Strategy, DI)](#design-patterns-solid-strategy-di)
+7. [Database Design](#database-design)
 8. [Technology Stack](#technology-stack)
+9. [Component Interactions](#component-interactions)
+10. [Extension Points](#extension-points)
 
 ---
 
 ## System Overview
 
 ### Architecture Type
-The Hospital Management System follows a **Layered Architecture** (also known as N-Tier Architecture) with clear separation of concerns.
+
+The Intelligent Hospital Management and Queueing System (HMS) follows a **Layered Service-Oriented Architecture (SOA)**:
+
+- **Presentation:** Streamlit in a web browser (reactive widgets, interaction-driven reruns).
+- **Services:** Domain logic in `src/services/` (one primary concern per service).
+- **Persistence:** Database access via a **single injected `DatabaseManager` symbol**, resolved at import time to either **SQLite** (`DatabaseManager`) or **MySQL** (`MySQLDatabaseManager`) based on `src/config.py`.
 
 ### High-Level Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Presentation Layer                    │
-│                  (UI Components - PyQt6)                │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│                  Business Logic Layer                     │
-│                    (Services)                            │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│                   Data Access Layer                      │
-│              (Database Manager - SQLite)                 │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│                    Database Layer                        │
-│                  (SQLite Database)                       │
-└──────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                 Presentation Layer                           │
+│   Streamlit (browser): sidebar nav, forms, data_editor,     │
+│   metrics, native charts (e.g. st.bar_chart), session_state │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ calls
+┌───────────────────────────▼─────────────────────────────────┐
+│                  Service Layer (Business Logic)              │
+│  PatientService, SpecializationService, QueueService,      │
+│  DoctorService, AppointmentService, ReportService          │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ uses (injected)
+┌───────────────────────────▼─────────────────────────────────┐
+│              Data Access Layer                               │
+│  DatabaseManager ←── strategy-like selection in               │
+│       src/database/__init__.py (USE_MYSQL / config)          │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────┐
+│         Database Layer (MySQL or SQLite)                     │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-### Key Principles
+### Core Principles
 
-1. **Separation of Concerns**: Each layer has a specific responsibility
-2. **Dependency Inversion**: Upper layers depend on abstractions
-3. **Single Responsibility**: Each class/module has one clear purpose
-4. **Open/Closed Principle**: Open for extension, closed for modification
+1. **Separation of concerns** — UI does not embed SQL; services encapsulate rules.
+2. **Dependency injection** — Services receive `DatabaseManager` at construction (see `app.py` `init_database()`).
+3. **Database-agnostic services** — Same service code paths for MySQL and SQLite; differences isolated in DB managers and parameter handling.
+4. **Lightweight visualization** — Dashboard analytics use **Pandas** and **Streamlit native chart APIs** (e.g. `st.bar_chart`); separate charting libraries such as Plotly are **not** required for the baseline stack, keeping dependencies lean.
 
 ---
 
-## Architecture Patterns
+## Layered Service-Oriented Architecture
 
-### 1. Layered Architecture
+| Layer | Responsibility | Primary location |
+|--------|----------------|------------------|
+| **Presentation** | Render UI, capture input, trigger service calls on user action | `app.py` (Streamlit) |
+| **Service** | Validation, business rules, orchestration | `src/services/*.py` |
+| **Data access** | Connections, queries, transactions | `src/database/db_manager.py`, `mysql_db_manager.py` |
+| **Models** | Entity structure, `to_dict`, helpers | `src/models/*.py` |
 
-The system is organized into distinct layers:
-
-#### Presentation Layer
-- **Responsibility**: User interface and user interactions
-- **Components**: PyQt6 widgets, windows, dialogs
-- **Dependencies**: Business Logic Layer
-
-#### Business Logic Layer
-- **Responsibility**: Business rules and operations
-- **Components**: Service classes (PatientService, QueueService, etc.)
-- **Dependencies**: Data Access Layer
-
-#### Data Access Layer
-- **Responsibility**: Database operations
-- **Components**: DatabaseManager, data models
-- **Dependencies**: Database Layer
-
-#### Database Layer
-- **Responsibility**: Data storage
-- **Components**: SQLite database, schema
-
-### 2. Service Layer Pattern
-
-Business logic is encapsulated in service classes:
-
-```python
-class PatientService:
-    def create_patient(self, patient_data):
-        # Validation
-        # Business rules
-        # Database operations
-        pass
-```
-
-### 3. Repository Pattern (Implicit)
-
-Database operations are abstracted through DatabaseManager:
-
-```python
-class DatabaseManager:
-    def execute_query(self, query, params):
-        # Database abstraction
-        pass
-```
+The **ReportService** aggregates data for the **Dashboard** (Reports & Analytics), combining SQL-backed queries with Pandas where reshaping is needed for charts.
 
 ---
 
-## System Layers
+## Presentation Layer (Streamlit)
 
-### Presentation Layer
+### Characteristics
 
-#### Components
-- **Main Window**: Application entry point
-- **Widgets**: Reusable UI components
-- **Dialogs**: Modal windows for user input
-- **Views**: Data display components
+- **Browser-based:** Users open `http://localhost:8501` (default) after `python -m streamlit run app.py` or `run_streamlit.bat`.
+- **Reactive UI:** Widgets (buttons, forms, `st.data_editor`, `st.selectbox`, etc.) are declared each run; **user interaction causes a script rerun**, reloading state from the database through services.
+- **Session state:** `st.session_state` holds the shared `DatabaseManager` and service instances, selected navigation page, and table selection flags.
+- **Navigation:** Sidebar buttons for **Dashboard**, **Patient Management**, **Specialization Management**, **Queue Management**, **Doctor Management**, **Appointments**.
 
-#### Responsibilities
-- User input validation (UI level)
-- Display data to users
-- Handle user events
-- Provide user feedback
+### Six primary modules (feature-complete in Beta v1.1)
 
-#### Example Structure
-```
-src/ui/
-├── main_window.py          # Main application window
-├── widgets/
-│   ├── patient_widget.py   # Patient management UI
-│   ├── queue_widget.py     # Queue management UI
-│   └── dashboard_widget.py # Dashboard UI
-└── dialogs/
-    ├── patient_dialog.py   # Patient form dialog
-    └── appointment_dialog.py
-```
-
-### Business Logic Layer
-
-#### Components
-- **Service Classes**: Business logic encapsulation
-- **Validators**: Data validation logic
-- **Business Rules**: Domain-specific rules
-
-#### Responsibilities
-- Implement business rules
-- Validate business logic
-- Coordinate between UI and data layers
-- Handle business exceptions
-
-#### Example Structure
-```
-src/services/
-├── patient_service.py      # Patient business logic
-├── queue_service.py        # Queue business logic
-├── doctor_service.py       # Doctor business logic
-└── appointment_service.py  # Appointment business logic
-```
-
-### Data Access Layer
-
-#### Components
-- **DatabaseManager**: Database connection and operations
-- **Models**: Data models representing database entities
-- **Repositories**: Data access abstractions (if needed)
-
-#### Responsibilities
-- Database connection management
-- CRUD operations
-- Transaction management
-- Data mapping
-
-#### Example Structure
-```
-src/database/
-├── db_manager.py           # Database manager
-├── schema.sql              # Database schema
-└── migrations/             # Database migrations
-
-src/models/
-├── patient.py              # Patient model
-├── doctor.py                # Doctor model
-└── specialization.py        # Specialization model
-```
+1. **Dashboard** — Multiselect report types, date range, bar charts and tables via Streamlit + Pandas.  
+2. **Patient Management** — CRUD, search, filter, statistics.  
+3. **Specialization Management** — Departments, capacity, active/inactive.  
+4. **Queue Management** — Add/serve, priorities, capacity, per-row actions, analytics panel.  
+5. **Doctor Management** — CRUD, specialization assignments, status.  
+6. **Appointment Management** — Schedule/edit/complete/cancel, **conflict detection** for overlapping doctor slots.
 
 ---
 
-## Design Patterns
+## Service and Data Access Layers
 
-### 1. Singleton Pattern
+### Dependency injection (runtime wiring)
 
-**DatabaseManager** uses Singleton-like pattern (single instance per application):
+In `app.py`, after a successful connection:
 
-```python
-class DatabaseManager:
-    def __init__(self, db_path='data/hospital_system.db'):
-        # Single database connection
-        pass
-```
+- `PatientService(db_manager)`, `QueueService(db_manager)`, `DoctorService(db_manager)`, `AppointmentService(db_manager)`, `ReportService(db_manager)`, etc.
 
-### 2. Factory Pattern
+Services depend on the **concrete manager** exported as `DatabaseManager` from `src/database/__init__.py`, not on MySQL- or SQLite-specific types in the UI.
 
-Used for creating UI components and service instances:
+### Strategy-like database selection
 
-```python
-class ServiceFactory:
-    @staticmethod
-    def create_patient_service():
-        return PatientService(DatabaseManager())
-```
+`src/database/__init__.py` selects:
 
-### 3. Observer Pattern
+- `MySQLDatabaseManager` aliased as `DatabaseManager` when `USE_MYSQL` is true.  
+- SQLite `DatabaseManager` when using file-based storage.
 
-Used for UI updates when data changes:
+This preserves **open/closed** behavior at the composition root: services remain unchanged when switching engines.
 
-```python
-# PyQt6 signals and slots
-class QueueWidget(QWidget):
-    queue_updated = pyqtSignal()
-    
-    def update_queue(self):
-        self.queue_updated.emit()
-```
+---
 
-### 4. Strategy Pattern
+## Queue Ordering and Appointment Conflicts
 
-Used for different queue ordering strategies:
+### Queue ordering
 
-```python
-class QueueOrderingStrategy:
-    def order_patients(self, patients):
-        pass
+Active queue rows are ordered **priority first**, then **FIFO by join time**:
 
-class PriorityQueueStrategy(QueueOrderingStrategy):
-    def order_patients(self, patients):
-        # Sort by priority
-        pass
-```
+- **Priority:** Super-Urgent > Urgent > Normal (higher `status` value first; see `QueueService.get_queue`).  
+- **Tie-breaker:** Earlier `joined_at` first.
 
-### 5. Repository Pattern
+Implemented as SQL-style ordering: `ORDER BY status DESC, joined_at ASC` in `QueueService.get_queue`, ensuring consistent, atomic ordering per specialization.
 
-Database operations abstracted through DatabaseManager:
+### Appointment conflicts
 
-```python
-# Implicit repository pattern
-db = DatabaseManager()
-patients = db.execute_query("SELECT * FROM patients")
-```
+`AppointmentService.check_conflicts` (used on create and when date/time changes) compares **interval overlap** for the same doctor: start/end derived from appointment time and **duration**. Overlaps block the operation with a user-visible error in the Streamlit form.
+
+---
+
+## Design Patterns (SOLID, Strategy, DI)
+
+| Pattern / principle | Application |
+|---------------------|-------------|
+| **Dependency Injection** | Services take `db_manager` in `__init__`; `app.py` constructs and stores them in `st.session_state`. |
+| **Strategy (database)** | Conditional import / alias in `src/database/__init__.py` for MySQL vs SQLite. |
+| **Single Responsibility (SOLID)** | One service per aggregate (patients, queues, appointments, …). |
+| **Repository-style access** | `DatabaseManager.execute_query` / `execute_update` centralize SQL execution. |
+
+Legacy examples referring to PyQt6 signals or desktop widgets are **obsolete**; the live UI is Streamlit-driven reruns, not signal/slot graphs.
 
 ---
 
 ## Database Design
 
-### Schema Overview
+Schema follows normalized relational design (patients, doctors, specializations, doctor_specializations, queue_entries, appointments, users, audit_logs, etc.).  
 
-The database follows **Third Normal Form (3NF)** with proper normalization:
-
-#### Core Tables
-1. **patients**: Patient information
-2. **doctors**: Doctor information
-3. **specializations**: Medical specializations
-4. **doctor_specializations**: Many-to-many relationship
-5. **queue_entries**: Queue management
-6. **appointments**: Appointment scheduling
-7. **users**: User accounts
-8. **audit_logs**: System audit trail
-
-### Relationships
-
-```
-patients (1) ──< (M) queue_entries
-patients (1) ──< (M) appointments
-doctors (1) ──< (M) appointments
-specializations (1) ──< (M) queue_entries
-specializations (1) ──< (M) appointments
-doctors (M) ──< (M) specializations (via doctor_specializations)
-```
-
-### Data Integrity
-
-- **Foreign Keys**: Enforced referential integrity
-- **Check Constraints**: Validate data values
-- **Unique Constraints**: Prevent duplicates
-- **Not Null Constraints**: Ensure required data
-
----
-
-## Class Structure
-
-### Model Classes
-
-```python
-class Patient:
-    """Patient data model"""
-    def __init__(self, patient_id, full_name, date_of_birth, ...):
-        self.patient_id = patient_id
-        self.full_name = full_name
-        # ... other attributes
-    
-    @property
-    def age(self):
-        """Calculate age from date of birth"""
-        pass
-    
-    def to_dict(self):
-        """Convert to dictionary"""
-        pass
-```
-
-### Service Classes
-
-```python
-class PatientService:
-    """Business logic for patient management"""
-    def __init__(self, db_manager):
-        self.db = db_manager
-    
-    def create_patient(self, patient_data):
-        """Create new patient with validation"""
-        # Validate
-        # Business rules
-        # Save to database
-        pass
-    
-    def get_patient(self, patient_id):
-        """Retrieve patient by ID"""
-        pass
-    
-    def search_patients(self, search_term):
-        """Search patients"""
-        pass
-```
-
-### UI Classes
-
-```python
-class PatientWidget(QWidget):
-    """UI component for patient management"""
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.patient_service = PatientService(DatabaseManager())
-        self.setup_ui()
-    
-    def setup_ui(self):
-        """Initialize UI components"""
-        pass
-    
-    def on_add_patient(self):
-        """Handle add patient action"""
-        pass
-```
-
----
-
-## Component Interactions
-
-### Adding a Patient Flow
-
-```
-User Input (UI)
-    ↓
-PatientWidget.on_add_patient()
-    ↓
-PatientService.create_patient()
-    ↓
-Validation (PatientService)
-    ↓
-DatabaseManager.execute_update()
-    ↓
-SQLite Database
-    ↓
-Success Response
-    ↓
-UI Update (PatientWidget)
-```
-
-### Queue Processing Flow
-
-```
-User Action (UI)
-    ↓
-QueueWidget.get_next_patient()
-    ↓
-QueueService.get_next_patient()
-    ↓
-Database Query (DatabaseManager)
-    ↓
-Business Logic (QueueService)
-    ↓
-Database Update (DatabaseManager)
-    ↓
-UI Refresh (QueueWidget)
-```
+**Engines:** MySQL (e.g. XAMPP) or SQLite file (`data/hospital_system.db` or configured path), selected in `src/config.py`.
 
 ---
 
 ## Technology Stack
 
-### Backend
-- **Language**: Python 3.8+
-- **Database**: SQLite 3
-- **ORM**: None (direct SQL with DatabaseManager)
+| Area | Choice |
+|------|--------|
+| Language | Python 3.9+ (see `requirements.txt`) |
+| UI | Streamlit ≥ 1.28 |
+| Data processing | Pandas |
+| Charts | Streamlit native APIs (`st.bar_chart`, etc.); no Plotly dependency in baseline requirements |
+| Database | MySQL (`mysql-connector-python`) or SQLite (stdlib) |
+| Tests | pytest |
 
-### Frontend
-- **Framework**: PyQt6
-- **UI Design**: Custom widgets and layouts
-- **Styling**: QStyleSheet (CSS-like)
+---
 
-### Development Tools
-- **Version Control**: Git
-- **Testing**: pytest
-- **Code Quality**: PEP 8 compliance
+## Component Interactions
 
-### Dependencies
+### Example: Schedule appointment (simplified)
+
 ```
-PyQt6>=6.5.0
-pytest>=7.4.0
-python-dateutil>=2.8.2
+Browser → Streamlit form submit
+    → AppointmentService.create_appointment(data)
+        → AppointmentService.check_conflicts(doctor, date, time, duration)
+        → DatabaseManager.execute_update / queries
+    → Streamlit success or error → rerun → updated table
 ```
 
----
+### Example: Serve next in queue
 
-## SOLID Principles Application
-
-### Single Responsibility Principle (SRP)
-- Each class has one clear responsibility
-- PatientService handles patient logic only
-- DatabaseManager handles database operations only
-
-### Open/Closed Principle (OCP)
-- Services can be extended without modification
-- New features added through inheritance or composition
-
-### Liskov Substitution Principle (LSP)
-- Subclasses can replace base classes
-- Interface implementations are interchangeable
-
-### Interface Segregation Principle (ISP)
-- Clients depend only on interfaces they use
-- Services expose only necessary methods
-
-### Dependency Inversion Principle (DIP)
-- High-level modules don't depend on low-level modules
-- Both depend on abstractions
-- Services depend on DatabaseManager abstraction
-
----
-
-## Security Architecture
-
-### Authentication
-- User login with username/password
-- Password hashing (bcrypt/argon2)
-- Session management
-
-### Authorization
-- Role-based access control (RBAC)
-- Permission checks at service layer
-- UI elements hidden based on role
-
-### Data Security
-- SQL injection prevention (parameterized queries)
-- Input validation at multiple layers
-- Audit logging for sensitive operations
-
----
-
-## Performance Considerations
-
-### Database Optimization
-- Indexes on frequently queried columns
-- Efficient queries with proper joins
-- Connection pooling (if needed)
-
-### UI Responsiveness
-- Asynchronous operations for long tasks
-- Progress indicators
-- Background processing
-
-### Caching Strategy
-- In-memory caching for frequently accessed data
-- Cache invalidation on updates
-
----
-
-## Scalability
-
-### Current Design
-- Single-user or small team usage
-- SQLite database (file-based)
-- Desktop application
-
-### Future Scalability Options
-- Migrate to PostgreSQL/MySQL for multi-user
-- Add web interface
-- Implement microservices architecture
-- Add load balancing
+```
+Streamlit button → QueueService.get_next_patient(specialization_id)
+    → QueueService.get_queue (ordered)
+    → QueueService.serve_patient(entry_id)
+    → DatabaseManager.execute_update
+    → Streamlit rerun → refreshed queue table
+```
 
 ---
 
 ## Extension Points
 
-### Adding New Features
-1. Create model class in `src/models/`
-2. Create service class in `src/services/`
-3. Create UI component in `src/ui/`
-4. Update database schema if needed
-5. Add tests
-
-### Adding New Reports
-1. Create report service
-2. Add UI component
-3. Implement export functionality
+1. Add a **model** in `src/models/`, **service** in `src/services/`, **UI section** in `app.py` (or split modules if desired).  
+2. Extend **ReportService** / Dashboard multiselect for new report types.  
+3. Optional: add chart libraries later; baseline intentionally stays lightweight.
 
 ---
 
 ## Conclusion
 
-This architecture provides:
-- ✅ Clear separation of concerns
-- ✅ Maintainable code structure
-- ✅ Extensible design
-- ✅ Testable components
-- ✅ Professional software engineering practices
+This architecture delivers:
 
-**Last Updated**: January 30, 2026  
-**Version**: 1.0
+- Browser-based **Streamlit** presentation with an **interaction-driven** execution model.  
+- **SOA-style** service layer with **dependency injection** and **database strategy** at the package boundary.  
+- **Documented queue policy** and **appointment conflict** rules aligned with implementation.
+
+**Last Updated:** March 2026  
+**Version:** Beta 1.1 (documentation alignment)
